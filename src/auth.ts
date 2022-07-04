@@ -18,11 +18,19 @@ import {
     UsersPagedResponse,
     UsersQuery,
 } from "./api"
-import UnauthorizedException from "./UnauthorizedException"
-import UnexpectedException from "./UnexpectedException"
-import {InternalUser, Org, OrgMemberInfo, toUser, User, UserAndOrgMemberInfo, UserMetadata, UserRole} from "./user"
+import {UnauthorizedException, UnexpectedException, ForbiddenException} from "./exceptions"
+import {
+    InternalUser,
+    Org,
+    OrgIdToOrgMemberInfo,
+    OrgMemberInfo,
+    toUser,
+    User,
+    UserAndOrgMemberInfo,
+    UserMetadata,
+    UserRole
+} from "./user"
 import {validateAuthUrl} from "./validators"
-import ForbiddenException from "./ForbiddenException"
 
 export type BaseAuthOptions = {
     authUrl: string
@@ -51,8 +59,9 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         console.error("Error initializing auth library. ", err)
     })
 
-    const validateAccessTokenAndGetUser = wrapValidateAccessTokenAndGetUser(tokenVerificationMetadataPromise);
-    const validateAccessTokenAndGetUserWithOrg = wrapValidateAccessTokenAndGetUserWithOrg(tokenVerificationMetadataPromise);
+    const validateAccessTokenAndGetUser = wrapValidateAccessTokenAndGetUser(tokenVerificationMetadataPromise)
+    const validateAccessTokenAndGetUserWithOrg = wrapValidateAccessTokenAndGetUserWithOrg(tokenVerificationMetadataPromise)
+    const validateAccessTokenAndGetUserWithOrgInfo = wrapValidateAccessTokenAndGetUserWithOrgInfo(tokenVerificationMetadataPromise)
 
     function fetchUserMetadataByUserId(userId: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
         return fetchUserMetadataByUserIdWithIdCheck(authUrl, apiKey, userId, includeOrgs);
@@ -116,6 +125,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
     return {
         validateAccessTokenAndGetUser,
         validateAccessTokenAndGetUserWithOrg,
+        validateAccessTokenAndGetUserWithOrgInfo,
         fetchUserMetadataByUserId,
         fetchUserMetadataByEmail,
         fetchUserMetadataByUsername,
@@ -136,25 +146,35 @@ export function initBaseAuth(opts: BaseAuthOptions) {
 
 function wrapValidateAccessTokenAndGetUser(tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>) {
     return async function validateAccessTokenAndGetUser(authorizationHeader?: string): Promise<User> {
-        const tokenVerificationMetadata = await getTokenVerificationMetadata(tokenVerificationMetadataPromise)
-        const bearerToken = extractBearerToken(authorizationHeader)
-        return verifyToken(bearerToken, tokenVerificationMetadata);
+        return extractAndVerifyBearerToken(tokenVerificationMetadataPromise, authorizationHeader)
     }
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrg(tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>) {
-    return async function validateAccessTokenAndGetUserWithOrg(authorizationHeader: string | undefined,
-                                                               requiredOrgId: string,
-                                                               minimumRequiredRole?: UserRole): Promise<UserAndOrgMemberInfo> {
-        const tokenVerificationMetadata = await getTokenVerificationMetadata(tokenVerificationMetadataPromise)
-        const bearerToken = extractBearerToken(authorizationHeader)
-        const user = verifyToken(bearerToken, tokenVerificationMetadata);
-        const orgMemberInfo = validateOrgAccessAndGetOrg(user, requiredOrgId, minimumRequiredRole);
+    const validateAccessTokenAndGetUserWithOrgInfo = wrapValidateAccessTokenAndGetUserWithOrgInfo(tokenVerificationMetadataPromise)
+    return async function validateAccessTokenAndGetUserWithOrgId(authorizationHeader: string | undefined,
+                                                                 requiredOrgId: string,
+                                                                 minimumRequiredRole?: UserRole): Promise<UserAndOrgMemberInfo> {
+        return validateAccessTokenAndGetUserWithOrgInfo(authorizationHeader, {orgId: requiredOrgId}, minimumRequiredRole);
+    }
+}
+
+function wrapValidateAccessTokenAndGetUserWithOrgInfo(tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>) {
+    return async function validateAccessTokenAndGetUserWithOrgInfo(authorizationHeader: string | undefined,
+                                                                   requiredOrgInfo: RequriedOrgInfo,
+                                                                   minimumRequiredRole?: UserRole): Promise<UserAndOrgMemberInfo> {
+        const user = await extractAndVerifyBearerToken(tokenVerificationMetadataPromise, authorizationHeader);
+        const orgMemberInfo = validateOrgAccessAndGetOrgMemberInfo(user, requiredOrgInfo, minimumRequiredRole);
         return {user, orgMemberInfo}
     }
 }
 
-function validateOrgAccessAndGetOrg(user: User, requiredOrgId: string, minimumRequiredRole?: UserRole): OrgMemberInfo {
+export type RequriedOrgInfo = {
+    orgId?: string
+    orgName?: string
+}
+
+function validateOrgAccessAndGetOrgMemberInfo(user: User, requiredOrgInfo: RequriedOrgInfo, minimumRequiredRole?: UserRole): OrgMemberInfo {
     const validRole = isValidRole(minimumRequiredRole)
     if (!validRole) {
         console.error(
@@ -166,13 +186,12 @@ function validateOrgAccessAndGetOrg(user: User, requiredOrgId: string, minimumRe
         )
     }
 
-    const orgIdToOrgMemberInfo = user.orgIdToOrgMemberInfo
-    if (!orgIdToOrgMemberInfo || !orgIdToOrgMemberInfo.hasOwnProperty(requiredOrgId)) {
-        throw new ForbiddenException(`User is not a member of org ${requiredOrgId}`)
+    const orgMemberInfo = getUserInfoInOrg(requiredOrgInfo, user.orgIdToOrgMemberInfo)
+    if (!orgMemberInfo) {
+        throw new ForbiddenException(`User is not a member of org ${JSON.stringify(requiredOrgInfo)}`)
     }
 
     // If minimumRequiredRole is specified, make sure the user is at least that role
-    let orgMemberInfo = orgIdToOrgMemberInfo[requiredOrgId]
     if (!validRole) {
         throw new UnexpectedException(
             `Configuration error. Minimum required role (${minimumRequiredRole}) is invalid.`,
@@ -185,6 +204,50 @@ function validateOrgAccessAndGetOrg(user: User, requiredOrgId: string, minimumRe
     }
 
     return orgMemberInfo
+}
+
+function getUserInfoInOrg(requiredOrgInfo: RequriedOrgInfo, orgIdToOrgMemberInfo?: OrgIdToOrgMemberInfo): OrgMemberInfo | undefined {
+    if (!orgIdToOrgMemberInfo) {
+        return undefined
+
+    } else if (requiredOrgInfo.orgId) {
+        // If we are looking for an orgId, we can do a direct lookup
+        if (!orgIdToOrgMemberInfo.hasOwnProperty(requiredOrgInfo.orgId)) {
+            return undefined;
+        }
+        const orgMemberInfo = orgIdToOrgMemberInfo[requiredOrgInfo.orgId]
+
+        // We also need to verify the orgName matches, if specified
+        if (requiredOrgInfo.orgName && orgNameMatches(requiredOrgInfo.orgName, orgMemberInfo)) {
+            return orgMemberInfo
+        } else if (requiredOrgInfo.orgName) {
+            return undefined
+        } else {
+            return orgMemberInfo
+        }
+
+    } else if (requiredOrgInfo.orgName) {
+        // We know there's no required orgId so just iterate over orgMemberInfos looking for a matching urlSafeOrgName
+        for (const orgMemberInfo of Object.values(orgIdToOrgMemberInfo)) {
+            if (orgNameMatches(requiredOrgInfo.orgName, orgMemberInfo)) {
+                return orgMemberInfo
+            }
+        }
+        return undefined
+
+    } else {
+        return undefined
+    }
+}
+
+function orgNameMatches(orgName: string, orgMemberInfo: OrgMemberInfo) {
+    return orgName === orgMemberInfo.orgName || orgName === orgMemberInfo.urlSafeOrgName
+}
+
+async function extractAndVerifyBearerToken(tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>, authorizationHeader: string | undefined) {
+    const tokenVerificationMetadata = await getTokenVerificationMetadata(tokenVerificationMetadataPromise)
+    const bearerToken = extractBearerToken(authorizationHeader)
+    return verifyToken(bearerToken, tokenVerificationMetadata);
 }
 
 function extractBearerToken(authHeader?: string): string {

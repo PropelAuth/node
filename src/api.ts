@@ -1,9 +1,11 @@
 import {httpRequest} from "./http"
 import {Org, toUserRole, User, UserMetadata} from "./user"
-import CreateUserException from "./CreateUserException";
-import UpdateUserMetadataException from "./UpdateUserMetadataException";
-import UpdateUserEmailException from "./UpdateUserEmailException";
-import MagicLinkCreationException from "./MagicLinkCreationException";
+import {
+    CreateUserException,
+    UpdateUserMetadataException,
+    UpdateUserEmailException,
+    MagicLinkCreationException
+} from "./exceptions";
 
 export type TokenVerificationMetadata = {
     verifierKey: string
@@ -377,11 +379,12 @@ export function createMagicLink(authUrl: URL, apiKey: string, createMagicLinkReq
 }
 
 const idRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i;
+
 function isValidId(id: string): boolean {
     return idRegex.test(id)
 }
 
-function formatQueryParameters(obj: {[key: string]: any}): string {
+function formatQueryParameters(obj: { [key: string]: any }): string {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(obj)) {
         if (value !== undefined) {

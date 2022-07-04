@@ -2,12 +2,10 @@ import {generateKeyPair} from "crypto"
 import jwt from "jsonwebtoken"
 import nock from "nock"
 import {v4 as uuid} from "uuid"
-import {initBaseAuth, User} from "../src"
-import {InternalOrgMemberInfo, InternalUser, toUser, UserRole} from "../src/user"
-import {TokenVerificationMetadata} from "../src/api"
-import UnauthorizedException from "../src/UnauthorizedException";
-import UnexpectedException from "../src/UnexpectedException";
-import ForbiddenException from "../src/ForbiddenException";
+import {initBaseAuth} from "../src"
+import {InternalOrgMemberInfo, InternalUser, toUser, User, UserRole} from "../src/user"
+import {TokenVerificationMetadata} from "../src/api";
+import {ForbiddenException, UnauthorizedException, UnexpectedException} from "../src/exceptions";
 
 const AUTH_URL = "https://auth.example.com"
 const ALGO = "RS256"
@@ -143,16 +141,19 @@ test("toUser converts correctly with orgs", async () => {
             "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a": {
                 org_id: "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
                 org_name: "orgA",
+                url_safe_org_name: "orga",
                 user_role: "Owner",
             },
             "4ca20d17-5021-4d62-8b3d-148214fa8d6d": {
                 org_id: "4ca20d17-5021-4d62-8b3d-148214fa8d6d",
                 org_name: "orgB",
+                url_safe_org_name: "orgb",
                 user_role: "Admin",
             },
             "15a31d0c-d284-4e7b-80a2-afb23f939cc3": {
                 org_id: "15a31d0c-d284-4e7b-80a2-afb23f939cc3",
                 org_name: "orgC",
+                url_safe_org_name: "orgc",
                 user_role: "Member",
             },
         },
@@ -163,16 +164,19 @@ test("toUser converts correctly with orgs", async () => {
             "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a": {
                 orgId: "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
                 orgName: "orgA",
+                urlSafeOrgName: "orga",
                 userRole: UserRole.Owner,
             },
             "4ca20d17-5021-4d62-8b3d-148214fa8d6d": {
                 orgId: "4ca20d17-5021-4d62-8b3d-148214fa8d6d",
                 orgName: "orgB",
+                urlSafeOrgName: "orgb",
                 userRole: UserRole.Admin,
             },
             "15a31d0c-d284-4e7b-80a2-afb23f939cc3": {
                 orgId: "15a31d0c-d284-4e7b-80a2-afb23f939cc3",
                 orgName: "orgC",
+                urlSafeOrgName: "orgc",
                 userRole: UserRole.Member,
             },
         },
@@ -242,11 +246,7 @@ test("validateAccessTokenAndGetUserWithOrg works with minimumRequiredRole", asyn
     const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
     const {validateAccessTokenAndGetUserWithOrg} = initBaseAuth({authUrl: AUTH_URL, apiKey})
 
-    const orgMemberInfo = {
-        org_id: uuid(),
-        org_name: randomString(),
-        user_role: "Admin",
-    }
+    const orgMemberInfo = randomOrg("Admin")
     const internalUser: InternalUser = {
         user_id: uuid(),
         org_id_to_org_member_info: {
@@ -277,11 +277,7 @@ test("validateAccessTokenAndGetUserWithOrg fails with invalid minimumRequiredRol
     const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
     const {validateAccessTokenAndGetUserWithOrg} = initBaseAuth({authUrl: AUTH_URL, apiKey})
 
-    const orgMemberInfo = {
-        org_id: uuid(),
-        org_name: randomString(),
-        user_role: "Admin",
-    }
+    const orgMemberInfo = randomOrg("Admin")
     const internalUser: InternalUser = {
         user_id: uuid(),
         org_id_to_org_member_info: {
@@ -384,11 +380,14 @@ function randomOrgIdToOrgMemberInfo(): { [org_id: string]: InternalOrgMemberInfo
     return orgIdToOrgMemberInfo
 }
 
-function randomOrg(): InternalOrgMemberInfo {
+function randomOrg(userRole?: string): InternalOrgMemberInfo {
+    const orgName = randomString()
+    const urlSafeOrgName = orgName.replace(" ", "_").toLowerCase()
     return {
         org_id: uuid(),
         org_name: randomString(),
-        user_role: choose(["Owner", "Admin", "Member"]),
+        url_safe_org_name: urlSafeOrgName,
+        user_role: userRole || choose(["Owner", "Admin", "Member"]),
     }
 }
 

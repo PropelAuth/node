@@ -37,6 +37,7 @@ export enum UserRole {
 export type OrgMemberInfo = {
     orgId: string
     orgName: string
+    urlSafeOrgName: string
     userRole: UserRole
 }
 
@@ -54,6 +55,7 @@ export type OrgIdToOrgMemberInfo = {
 export type InternalOrgMemberInfo = {
     org_id: string
     org_name: string
+    url_safe_org_name: string
     user_role: string
 }
 export type InternalUser = {
@@ -82,6 +84,7 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
             camelCase[key] = {
                 orgId: snakeCaseValue.org_id,
                 orgName: snakeCaseValue.org_name,
+                urlSafeOrgName: snakeCaseValue.url_safe_org_name,
                 userRole: toUserRole(snakeCaseValue.user_role),
             }
         }
