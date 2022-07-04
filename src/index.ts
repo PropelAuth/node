@@ -1,5 +1,17 @@
 export {initBaseAuth, BaseAuthOptions, RequriedOrgInfo} from "./auth"
-export {TokenVerificationMetadata} from "./api"
+export {
+    TokenVerificationMetadata,
+    OrgQueryResponse,
+    OrgQuery,
+    UsersQuery,
+    UsersInOrgQuery,
+    UsersPagedResponse,
+    CreateUserRequest,
+    UpdateUserMetadataRequest,
+    UpdateUserEmailRequest,
+    CreateMagicLinkRequest,
+    MagicLink,
+} from "./api"
 export {
     CreateUserException,
     ForbiddenException,
