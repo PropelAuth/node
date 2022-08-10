@@ -1,6 +1,7 @@
 import jwt, {VerifyOptions} from "jsonwebtoken"
 import {
-    createMagicLink, CreateMagicLinkRequest,
+    addUserToOrg, AddUserToOrgRequest,
+    createMagicLink, CreateMagicLinkRequest, createOrg, CreateOrgRequest,
     createUser,
     CreateUserRequest,
     fetchBatchUserMetadata,
@@ -126,6 +127,14 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return migrateUserFromExternalSource(authUrl, apiKey, migrateUserFromExternalSourceRequest)
     }
 
+    function createOrgWrapper(createOrgRequest: CreateOrgRequest): Promise<Org> {
+        return createOrg(authUrl, apiKey, createOrgRequest)
+    }
+
+    function addUserToOrgWrapper(addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
+        return addUserToOrg(authUrl, apiKey, addUserToOrgRequest)
+    }
+
     return {
         validateAccessTokenAndGetUser,
         validateAccessTokenAndGetUserWithOrg,
@@ -145,6 +154,8 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         updateUserEmail: updateUserEmailWrapper,
         createMagicLink: createMagicLinkWrapper,
         migrateUserFromExternalSource: migrateUserFromExternalSourceWrapper,
+        createOrg: createOrgWrapper,
+        addUserToOrg: addUserToOrgWrapper,
         UserRole,
     }
 }

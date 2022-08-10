@@ -14,6 +14,22 @@ export class MigrateUserException extends Error {
     }
 }
 
+export class CreateOrgException extends Error {
+    readonly fieldToErrors: {[fieldName: string]: string[]};
+    constructor(message: string) {
+        super(message);
+        this.fieldToErrors = JSON.parse(message);
+    }
+}
+
+export class AddUserToOrgException extends Error {
+    readonly fieldToErrors: {[fieldName: string]: string[]};
+    constructor(message: string) {
+        super(message);
+        this.fieldToErrors = JSON.parse(message);
+    }
+}
+
 export class ForbiddenException extends Error {
     readonly message: string;
     readonly status: number;

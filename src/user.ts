@@ -108,3 +108,14 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
 export function toUserRole(userRole: string): UserRole {
     return UserRole[userRole as keyof typeof UserRole]
 }
+
+export function toUserRoleStr(userRole: UserRole): string {
+    switch (userRole) {
+        case UserRole.Owner:
+            return "Owner"
+        case UserRole.Admin:
+            return "Admin"
+        case UserRole.Member:
+            return "Member"
+    }
+}

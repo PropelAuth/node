@@ -1,10 +1,10 @@
 import {httpRequest} from "./http"
-import {Org, toUserRole, User, UserMetadata} from "./user"
+import {Org, toUserRole, toUserRoleStr, User, UserMetadata, UserRole} from "./user"
 import {
     CreateUserException,
     UpdateUserMetadataException,
     UpdateUserEmailException,
-    MagicLinkCreationException, MigrateUserException
+    MagicLinkCreationException, MigrateUserException, CreateOrgException, AddUserToOrgException
 } from "./exceptions";
 
 export type TokenVerificationMetadata = {
@@ -104,11 +104,7 @@ export function fetchOrg(authUrl: URL, apiKey: string, orgId: string): Promise<O
             throw new Error("Unknown error when fetching org")
         }
 
-        const jsonParse = JSON.parse(httpResponse.response)
-        return {
-            orgId: jsonParse.org_id,
-            name: jsonParse.name,
-        }
+        return parseOrg(httpResponse.response)
     })
 }
 
@@ -378,16 +374,13 @@ export type MigrateUserFromExternalSourceRequest = {
 
     existingUserId?: string,
     existingPasswordHash?: string,
-    existingMfaSecret?: string,
+    existingMfaBase32EncodedSecret?: string,
 
     enabled?: boolean,
 
     firstName?: string,
     lastName?: string,
     username?: string,
-
-    createdAtInSeconds?: number,
-    lastActiveAtInSeconds?: number,
 }
 
 export function migrateUserFromExternalSource(authUrl: URL,
@@ -399,18 +392,15 @@ export function migrateUserFromExternalSource(authUrl: URL,
 
         existing_user_id: migrateUserFromExternalSourceRequest.existingUserId,
         existing_password_hash: migrateUserFromExternalSourceRequest.existingPasswordHash,
-        existing_mfa_secret: migrateUserFromExternalSourceRequest.existingMfaSecret,
+        existing_mfa_base32_encoded_secret: migrateUserFromExternalSourceRequest.existingMfaBase32EncodedSecret,
 
         enabled: migrateUserFromExternalSourceRequest.enabled,
 
         first_name: migrateUserFromExternalSourceRequest.firstName,
         last_name: migrateUserFromExternalSourceRequest.lastName,
         username: migrateUserFromExternalSourceRequest.username,
-
-        created_at_in_seconds: migrateUserFromExternalSourceRequest.createdAtInSeconds,
-        last_active_at_in_seconds: migrateUserFromExternalSourceRequest.lastActiveAtInSeconds,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/migrate-user/`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/migrate_user/`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("apiKey is incorrect")
@@ -421,6 +411,56 @@ export function migrateUserFromExternalSource(authUrl: URL,
             }
 
             return parseUser(httpResponse.response)
+        })
+}
+
+export type CreateOrgRequest = {
+    name: string
+}
+
+export function createOrg(authUrl: URL, apiKey: string, createOrgRequest: CreateOrgRequest): Promise<Org> {
+    const request = {
+        name: createOrgRequest.name,
+    }
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/`, "POST", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new CreateOrgException(httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when creating org")
+            }
+
+            return parseOrg(httpResponse.response)
+        })
+}
+
+export type AddUserToOrgRequest = {
+    userId: string
+    orgId: string
+    role: UserRole
+}
+
+export function addUserToOrg(authUrl: URL, apiKey: string, addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
+    const request = {
+        user_id: addUserToOrgRequest.userId,
+        org_id: addUserToOrgRequest.orgId,
+        role: toUserRoleStr(addUserToOrgRequest.role),
+    }
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/add_user`, "POST", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new AddUserToOrgException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when creating org")
+            }
+
+            return true
         })
 }
 
@@ -442,6 +482,14 @@ function formatQueryParameters(obj: { [key: string]: any }): string {
 
 function formatIssuer(authUrl: URL): string {
     return authUrl.origin
+}
+
+function parseOrg(response: string): Org {
+    const jsonParse = JSON.parse(response)
+    return {
+        orgId: jsonParse.org_id,
+        name: jsonParse.name,
+    }
 }
 
 function parseUser(response: string) {
@@ -492,6 +540,8 @@ function parseUserMetadataAndOptionalPagingInfo(response: string) {
             this.pageSize = value;
         } else if (key === "has_more_results") {
             this.hasMoreResults = value;
+        } else if (key === "has_password") {
+            this.hasPassword = value;
         } else {
             return value
         }
