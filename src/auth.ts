@@ -10,7 +10,7 @@ import {
     fetchUserMetadataByQuery,
     fetchUserMetadataByUserIdWithIdCheck,
     fetchUsersByQuery,
-    fetchUsersInOrg, MagicLink,
+    fetchUsersInOrg, MagicLink, migrateUserFromExternalSource, MigrateUserFromExternalSourceRequest,
     OrgQuery,
     OrgQueryResponse,
     TokenVerificationMetadata, updateUserEmail, UpdateUserEmailRequest, updateUserMetadata, UpdateUserMetadataRequest,
@@ -122,6 +122,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return createMagicLink(authUrl, apiKey, createMagicLinkRequest)
     }
 
+    function migrateUserFromExternalSourceWrapper(migrateUserFromExternalSourceRequest: MigrateUserFromExternalSourceRequest): Promise<User> {
+        return migrateUserFromExternalSource(authUrl, apiKey, migrateUserFromExternalSourceRequest)
+    }
+
     return {
         validateAccessTokenAndGetUser,
         validateAccessTokenAndGetUserWithOrg,
@@ -140,6 +144,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         updateUserMetadata: updateUserMetadataWrapper,
         updateUserEmail: updateUserEmailWrapper,
         createMagicLink: createMagicLinkWrapper,
+        migrateUserFromExternalSource: migrateUserFromExternalSourceWrapper,
         UserRole,
     }
 }

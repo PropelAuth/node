@@ -6,6 +6,14 @@ export class CreateUserException extends Error {
     }
 }
 
+export class MigrateUserException extends Error {
+    readonly fieldToErrors: {[fieldName: string]: string[]};
+    constructor(message: string) {
+        super(message);
+        this.fieldToErrors = JSON.parse(message);
+    }
+}
+
 export class ForbiddenException extends Error {
     readonly message: string;
     readonly status: number;

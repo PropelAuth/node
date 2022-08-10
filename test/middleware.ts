@@ -187,9 +187,11 @@ test("toUser converts correctly with orgs", async () => {
 test("toUser converts correctly without orgs", async () => {
     const internalUser: InternalUser = {
         user_id: "cbf064e2-edaa-4d35-b413-a8d857329c12",
+        legacy_user_id: "something",
     }
     const user: User = {
         userId: "cbf064e2-edaa-4d35-b413-a8d857329c12",
+        legacyUserId: "something",
     }
     expect(toUser(internalUser)).toEqual(user)
 })

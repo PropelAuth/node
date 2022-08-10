@@ -4,7 +4,7 @@ import {
     CreateUserException,
     UpdateUserMetadataException,
     UpdateUserEmailException,
-    MagicLinkCreationException
+    MagicLinkCreationException, MigrateUserException
 } from "./exceptions";
 
 export type TokenVerificationMetadata = {
@@ -274,13 +274,7 @@ export function createUser(authUrl: URL, apiKey: string, createUserRequest: Crea
                 throw new Error("Unknown error when creating user")
             }
 
-            return JSON.parse(httpResponse.response, function (key, value) {
-                if (key === "user_id") {
-                    this.userId = value
-                } else {
-                    return value
-                }
-            })
+            return parseUser(httpResponse.response)
         })
 }
 
@@ -378,6 +372,58 @@ export function createMagicLink(authUrl: URL, apiKey: string, createMagicLinkReq
         })
 }
 
+export type MigrateUserFromExternalSourceRequest = {
+    email: string,
+    emailConfirmed: boolean,
+
+    existingUserId?: string,
+    existingPasswordHash?: string,
+    existingMfaSecret?: string,
+
+    enabled?: boolean,
+
+    firstName?: string,
+    lastName?: string,
+    username?: string,
+
+    createdAtInSeconds?: number,
+    lastActiveAtInSeconds?: number,
+}
+
+export function migrateUserFromExternalSource(authUrl: URL,
+                                              apiKey: string,
+                                              migrateUserFromExternalSourceRequest: MigrateUserFromExternalSourceRequest): Promise<User> {
+    const request = {
+        email: migrateUserFromExternalSourceRequest.email,
+        email_confirmed: migrateUserFromExternalSourceRequest.emailConfirmed,
+
+        existing_user_id: migrateUserFromExternalSourceRequest.existingUserId,
+        existing_password_hash: migrateUserFromExternalSourceRequest.existingPasswordHash,
+        existing_mfa_secret: migrateUserFromExternalSourceRequest.existingMfaSecret,
+
+        enabled: migrateUserFromExternalSourceRequest.enabled,
+
+        first_name: migrateUserFromExternalSourceRequest.firstName,
+        last_name: migrateUserFromExternalSourceRequest.lastName,
+        username: migrateUserFromExternalSourceRequest.username,
+
+        created_at_in_seconds: migrateUserFromExternalSourceRequest.createdAtInSeconds,
+        last_active_at_in_seconds: migrateUserFromExternalSourceRequest.lastActiveAtInSeconds,
+    }
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/migrate-user/`, "POST", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new MigrateUserException(httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when migrating user")
+            }
+
+            return parseUser(httpResponse.response)
+        })
+}
+
 const idRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i;
 
 function isValidId(id: string): boolean {
@@ -396,6 +442,20 @@ function formatQueryParameters(obj: { [key: string]: any }): string {
 
 function formatIssuer(authUrl: URL): string {
     return authUrl.origin
+}
+
+function parseUser(response: string) {
+    return JSON.parse(response, function (key, value) {
+        if (key === "user_id") {
+            this.userId = value
+        } else if (key === "legacy_user_id") {
+            this.legacyUserId = value
+        } else if (key === "org_id_to_org_info") {
+            this.orgIdToOrgInfo = value;
+        } else {
+            return value
+        }
+    })
 }
 
 function parseUserMetadataAndOptionalPagingInfo(response: string) {
