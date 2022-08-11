@@ -13,9 +13,12 @@ export {
     MagicLink,
 } from "./api"
 export {
+    AddUserToOrgException,
+    CreateOrgException,
     CreateUserException,
     ForbiddenException,
     MagicLinkCreationException,
+    MigrateUserException,
     UnauthorizedException,
     UnexpectedException,
     UpdateUserEmailException,

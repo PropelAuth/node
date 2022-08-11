@@ -1,6 +1,10 @@
 export type User = {
     userId: string
     orgIdToOrgMemberInfo?: OrgIdToOrgMemberInfo
+
+    // If you used our migration APIs to migrate this user from a different system,
+    //   this is their original ID from that system.
+    legacyUserId?: string
 }
 export type Org = {
     orgId: string,
@@ -26,6 +30,10 @@ export type UserMetadata = {
     lastActiveAt: number,
 
     orgIdToOrgInfo?: OrgIdToOrgMemberInfo
+
+    // If you used our migration APIs to migrate this user from a different system,
+    //   this is their original ID from that system.
+    legacyUserId?: string
 }
 
 export enum UserRole {
@@ -61,12 +69,16 @@ export type InternalOrgMemberInfo = {
 export type InternalUser = {
     user_id: string
     org_id_to_org_member_info?: { [org_id: string]: InternalOrgMemberInfo }
+
+    // If you used our migration APIs to migrate this user from a different system, this is their original ID from that system.
+    legacy_user_id?: string
 }
 
 export function toUser(snake_case: InternalUser): User {
     return {
         userId: snake_case.user_id,
         orgIdToOrgMemberInfo: toOrgIdToOrgMemberInfo(snake_case.org_id_to_org_member_info),
+        legacyUserId: snake_case.legacy_user_id,
     }
 }
 
@@ -95,4 +107,15 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
 
 export function toUserRole(userRole: string): UserRole {
     return UserRole[userRole as keyof typeof UserRole]
+}
+
+export function toUserRoleStr(userRole: UserRole): string {
+    switch (userRole) {
+        case UserRole.Owner:
+            return "Owner"
+        case UserRole.Admin:
+            return "Admin"
+        case UserRole.Member:
+            return "Member"
+    }
 }

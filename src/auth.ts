@@ -1,6 +1,7 @@
 import jwt, {VerifyOptions} from "jsonwebtoken"
 import {
-    createMagicLink, CreateMagicLinkRequest,
+    addUserToOrg, AddUserToOrgRequest,
+    createMagicLink, CreateMagicLinkRequest, createOrg, CreateOrgRequest,
     createUser,
     CreateUserRequest,
     fetchBatchUserMetadata,
@@ -10,7 +11,7 @@ import {
     fetchUserMetadataByQuery,
     fetchUserMetadataByUserIdWithIdCheck,
     fetchUsersByQuery,
-    fetchUsersInOrg, MagicLink,
+    fetchUsersInOrg, MagicLink, migrateUserFromExternalSource, MigrateUserFromExternalSourceRequest,
     OrgQuery,
     OrgQueryResponse,
     TokenVerificationMetadata, updateUserEmail, UpdateUserEmailRequest, updateUserMetadata, UpdateUserMetadataRequest,
@@ -122,6 +123,18 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return createMagicLink(authUrl, apiKey, createMagicLinkRequest)
     }
 
+    function migrateUserFromExternalSourceWrapper(migrateUserFromExternalSourceRequest: MigrateUserFromExternalSourceRequest): Promise<User> {
+        return migrateUserFromExternalSource(authUrl, apiKey, migrateUserFromExternalSourceRequest)
+    }
+
+    function createOrgWrapper(createOrgRequest: CreateOrgRequest): Promise<Org> {
+        return createOrg(authUrl, apiKey, createOrgRequest)
+    }
+
+    function addUserToOrgWrapper(addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
+        return addUserToOrg(authUrl, apiKey, addUserToOrgRequest)
+    }
+
     return {
         validateAccessTokenAndGetUser,
         validateAccessTokenAndGetUserWithOrg,
@@ -140,6 +153,9 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         updateUserMetadata: updateUserMetadataWrapper,
         updateUserEmail: updateUserEmailWrapper,
         createMagicLink: createMagicLinkWrapper,
+        migrateUserFromExternalSource: migrateUserFromExternalSourceWrapper,
+        createOrg: createOrgWrapper,
+        addUserToOrg: addUserToOrgWrapper,
         UserRole,
     }
 }
