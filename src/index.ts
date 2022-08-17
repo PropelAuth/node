@@ -34,7 +34,5 @@ export {
     UserAndOrgMemberInfo,
     InternalUser,
     toOrgIdToOrgMemberInfo,
-    UserRole,
     UserMetadata,
-    toUserRole
 } from "./user"

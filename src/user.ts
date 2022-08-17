@@ -36,17 +36,11 @@ export type UserMetadata = {
     legacyUserId?: string
 }
 
-export enum UserRole {
-    Member = 0,
-    Admin = 1,
-    Owner = 2,
-}
-
 export type OrgMemberInfo = {
     orgId: string
     orgName: string
     urlSafeOrgName: string
-    userRole: UserRole
+    userRoleName: string
 }
 
 export type UserAndOrgMemberInfo = {
@@ -97,25 +91,10 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
                 orgId: snakeCaseValue.org_id,
                 orgName: snakeCaseValue.org_name,
                 urlSafeOrgName: snakeCaseValue.url_safe_org_name,
-                userRole: toUserRole(snakeCaseValue.user_role),
+                userRoleName: snakeCaseValue.user_role,
             }
         }
     }
 
     return camelCase
-}
-
-export function toUserRole(userRole: string): UserRole {
-    return UserRole[userRole as keyof typeof UserRole]
-}
-
-export function toUserRoleStr(userRole: UserRole): string {
-    switch (userRole) {
-        case UserRole.Owner:
-            return "Owner"
-        case UserRole.Admin:
-            return "Admin"
-        case UserRole.Member:
-            return "Member"
-    }
 }

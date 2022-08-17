@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken"
 import nock from "nock"
 import {v4 as uuid} from "uuid"
 import {initBaseAuth} from "../src"
-import {InternalOrgMemberInfo, InternalUser, toUser, User, UserRole} from "../src/user"
+import {InternalOrgMemberInfo, InternalUser, toUser, User} from "../src/user"
 import {TokenVerificationMetadata} from "../src/api";
 import {ForbiddenException, UnauthorizedException, UnexpectedException} from "../src/exceptions";
 
@@ -43,6 +43,11 @@ test("when manualTokenVerificationMetadata is specified, no fetch is made", asyn
     const tokenVerificationMetadata: TokenVerificationMetadata = {
         issuer: AUTH_URL,
         verifierKey: publicKey,
+        roleNameToIndex: {
+            "Owner": 0,
+            "Admin": 1,
+            "Member": 2,
+        }
     };
     const {validateAccessTokenAndGetUser} = initBaseAuth({
         authUrl: AUTH_URL + "/",
@@ -165,19 +170,19 @@ test("toUser converts correctly with orgs", async () => {
                 orgId: "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
                 orgName: "orgA",
                 urlSafeOrgName: "orga",
-                userRole: UserRole.Owner,
+                userRoleName: "Owner",
             },
             "4ca20d17-5021-4d62-8b3d-148214fa8d6d": {
                 orgId: "4ca20d17-5021-4d62-8b3d-148214fa8d6d",
                 orgName: "orgB",
                 urlSafeOrgName: "orgb",
-                userRole: UserRole.Admin,
+                userRoleName: "Admin",
             },
             "15a31d0c-d284-4e7b-80a2-afb23f939cc3": {
                 orgId: "15a31d0c-d284-4e7b-80a2-afb23f939cc3",
                 orgName: "orgC",
                 urlSafeOrgName: "orgc",
-                userRole: UserRole.Member,
+                userRoleName: "Member",
             },
         },
     }
@@ -258,20 +263,51 @@ test("validateAccessTokenAndGetUserWithOrg works with minimumRequiredRole", asyn
     const user = toUser(internalUser)
     const accessToken = createAccessToken({internalUser, privateKey})
 
-    const rolesThatShouldSucceed = new Set([UserRole.Admin, UserRole.Member])
-    for (let role of [UserRole.Owner, UserRole.Admin, UserRole.Member]) {
+    const rolesThatShouldSucceed = new Set(["Admin", "Member"])
+    for (let role of ["Owner", "Admin", "Member"]) {
         const authHeader = `Bearer ${accessToken}`
+        const roleMatchInfo = {minimumRequiredRole: role}
 
         if (rolesThatShouldSucceed.has(role)) {
-            const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrg(authHeader, orgMemberInfo.org_id, role)
+            const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrg(authHeader, orgMemberInfo.org_id, roleMatchInfo)
             expect(userAndOrgMemberInfo.user).toEqual(user)
             expect(userAndOrgMemberInfo.orgMemberInfo).toEqual(user.orgIdToOrgMemberInfo && user.orgIdToOrgMemberInfo[orgMemberInfo.org_id])
         } else {
-            await expect(validateAccessTokenAndGetUserWithOrg(authHeader, orgMemberInfo.org_id, role))
+            await expect(validateAccessTokenAndGetUserWithOrg(authHeader, orgMemberInfo.org_id, roleMatchInfo))
                 .rejects
                 .toThrow(ForbiddenException)
         }
     }
+    expect(nock.isDone()).toBe(true)
+})
+
+test("validateAccessTokenAndGetUserWithOrg works with roleIsOneOf", async () => {
+    const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
+    const {validateAccessTokenAndGetUserWithOrg} = initBaseAuth({authUrl: AUTH_URL, apiKey})
+
+    const orgMemberInfo = randomOrg("Admin")
+    const internalUser: InternalUser = {
+        user_id: uuid(),
+        org_id_to_org_member_info: {
+            [orgMemberInfo.org_id]: orgMemberInfo,
+        },
+    }
+    const user = toUser(internalUser)
+    const accessToken = createAccessToken({internalUser, privateKey})
+    const authHeader = `Bearer ${accessToken}`
+
+    const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrg(authHeader, orgMemberInfo.org_id, {roleIsOneOf: ["Member", "Admin"]})
+    expect(userAndOrgMemberInfo.user).toEqual(user)
+    expect(userAndOrgMemberInfo.orgMemberInfo).toEqual(user.orgIdToOrgMemberInfo && user.orgIdToOrgMemberInfo[orgMemberInfo.org_id])
+
+    await expect(validateAccessTokenAndGetUserWithOrg(authHeader, orgMemberInfo.org_id, {roleIsOneOf: ["Owner"]}))
+        .rejects
+        .toThrow(ForbiddenException)
+
+    await expect(validateAccessTokenAndGetUserWithOrg(authHeader, orgMemberInfo.org_id, {roleIsOneOf: []}))
+        .rejects
+        .toThrow(ForbiddenException)
+
     expect(nock.isDone()).toBe(true)
 })
 
@@ -307,6 +343,11 @@ async function setupTokenVerificationMetadataEndpoint() {
             200,
             JSON.stringify({
                 verifier_key_pem: publicKey,
+                roles: [
+                    {"name": "Owner"},
+                    {"name": "Admin"},
+                    {"name": "Member"},
+                ]
             })
         )
 

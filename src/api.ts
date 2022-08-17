@@ -1,5 +1,5 @@
 import {httpRequest} from "./http"
-import {Org, toUserRole, toUserRoleStr, User, UserMetadata, UserRole} from "./user"
+import {Org, User, UserMetadata} from "./user"
 import {
     CreateUserException,
     UpdateUserMetadataException,
@@ -10,6 +10,11 @@ import {
 export type TokenVerificationMetadata = {
     verifierKey: string
     issuer: string
+    roleNameToIndex: {[role_name: string]: number}
+}
+
+type Role = {
+    name: string
 }
 
 export function fetchTokenVerificationMetadata(authUrl: URL,
@@ -27,9 +32,16 @@ export function fetchTokenVerificationMetadata(authUrl: URL,
         }
 
         const jsonParse = JSON.parse(httpResponse.response)
+
+        const roleNameToIndex: {[role_name: string]: number} = {}
+        jsonParse.roles?.forEach((role: Role, index: number) => {
+            roleNameToIndex[role.name] = index
+        });
+
         return {
             verifierKey: jsonParse.verifier_key_pem,
             issuer: formatIssuer(authUrl),
+            roleNameToIndex,
         }
     })
 }
@@ -439,14 +451,14 @@ export function createOrg(authUrl: URL, apiKey: string, createOrgRequest: Create
 export type AddUserToOrgRequest = {
     userId: string
     orgId: string
-    role: UserRole
+    role: string
 }
 
 export function addUserToOrg(authUrl: URL, apiKey: string, addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
     const request = {
         user_id: addUserToOrgRequest.userId,
         org_id: addUserToOrgRequest.orgId,
-        role: toUserRoleStr(addUserToOrgRequest.role),
+        role: addUserToOrgRequest.role,
     }
     return httpRequest(authUrl, apiKey, `/api/backend/v1/org/add_user`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
@@ -531,7 +543,7 @@ function parseUserMetadataAndOptionalPagingInfo(response: string) {
         } else if (key === "org_name") {
             this.orgName = value;
         } else if (key === "user_role") {
-            this.userRole = toUserRole(value);
+            this.userRole = value;
         } else if (key === "total_users") {
             this.totalUsers = value;
         } else if (key === "current_page") {

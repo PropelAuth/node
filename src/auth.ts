@@ -29,7 +29,6 @@ import {
     User,
     UserAndOrgMemberInfo,
     UserMetadata,
-    UserRole
 } from "./user"
 import {validateAuthUrl} from "./validators"
 
@@ -156,13 +155,13 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         migrateUserFromExternalSource: migrateUserFromExternalSourceWrapper,
         createOrg: createOrgWrapper,
         addUserToOrg: addUserToOrgWrapper,
-        UserRole,
     }
 }
 
 function wrapValidateAccessTokenAndGetUser(tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>) {
     return async function validateAccessTokenAndGetUser(authorizationHeader?: string): Promise<User> {
-        return extractAndVerifyBearerToken(tokenVerificationMetadataPromise, authorizationHeader)
+        const tokenVerificationMetadata = await getTokenVerificationMetadata(tokenVerificationMetadataPromise)
+        return extractAndVerifyBearerToken(tokenVerificationMetadata, authorizationHeader)
     }
 }
 
@@ -170,53 +169,86 @@ function wrapValidateAccessTokenAndGetUserWithOrg(tokenVerificationMetadataPromi
     const validateAccessTokenAndGetUserWithOrgInfo = wrapValidateAccessTokenAndGetUserWithOrgInfo(tokenVerificationMetadataPromise)
     return async function validateAccessTokenAndGetUserWithOrgId(authorizationHeader: string | undefined,
                                                                  requiredOrgId: string,
-                                                                 minimumRequiredRole?: UserRole): Promise<UserAndOrgMemberInfo> {
-        return validateAccessTokenAndGetUserWithOrgInfo(authorizationHeader, {orgId: requiredOrgId}, minimumRequiredRole);
+                                                                 roleMatchInfo?: RoleMatchInfo): Promise<UserAndOrgMemberInfo> {
+        return validateAccessTokenAndGetUserWithOrgInfo(authorizationHeader, {orgId: requiredOrgId}, roleMatchInfo);
     }
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfo(tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(authorizationHeader: string | undefined,
                                                                    requiredOrgInfo: RequriedOrgInfo,
-                                                                   minimumRequiredRole?: UserRole): Promise<UserAndOrgMemberInfo> {
-        const user = await extractAndVerifyBearerToken(tokenVerificationMetadataPromise, authorizationHeader);
-        const orgMemberInfo = validateOrgAccessAndGetOrgMemberInfo(user, requiredOrgInfo, minimumRequiredRole);
+                                                                   roleMatchInfo?: RoleMatchInfo): Promise<UserAndOrgMemberInfo> {
+        const tokenVerificationMetadata = await getTokenVerificationMetadata(tokenVerificationMetadataPromise)
+        const user = await extractAndVerifyBearerToken(tokenVerificationMetadata, authorizationHeader);
+        const orgMemberInfo = validateOrgAccessAndGetOrgMemberInfo(user, requiredOrgInfo, tokenVerificationMetadata.roleNameToIndex, roleMatchInfo);
         return {user, orgMemberInfo}
     }
 }
 
+export type RoleMatchInfo = {
+    minimumRequiredRole?: string
+    roleIsOneOf?: string[]
+}
 export type RequriedOrgInfo = {
     orgId?: string
     orgName?: string
 }
 
-function validateOrgAccessAndGetOrgMemberInfo(user: User, requiredOrgInfo: RequriedOrgInfo, minimumRequiredRole?: UserRole): OrgMemberInfo {
-    const validRole = isValidRole(minimumRequiredRole)
-    if (!validRole) {
-        console.error(
-            "Unknown role ",
-            minimumRequiredRole,
-            ". " +
-            "Role must be one of [UserRole.Owner, UserRole.Admin, UserRole.Member] or undefined. " +
-            "Requests will be rejected to be safe.",
-        )
-    }
-
+function validateOrgAccessAndGetOrgMemberInfo(user: User,
+                                              requiredOrgInfo: RequriedOrgInfo,
+                                              roleNameToIndex: { [role: string]: number },
+                                              roleMatchInfo?: RoleMatchInfo): OrgMemberInfo {
     const orgMemberInfo = getUserInfoInOrg(requiredOrgInfo, user.orgIdToOrgMemberInfo)
     if (!orgMemberInfo) {
         throw new ForbiddenException(`User is not a member of org ${JSON.stringify(requiredOrgInfo)}`)
     }
 
-    // If minimumRequiredRole is specified, make sure the user is at least that role
-    if (!validRole) {
+    if (roleMatchInfo && roleMatchInfo.roleIsOneOf === undefined && roleMatchInfo.minimumRequiredRole === undefined) {
         throw new UnexpectedException(
-            `Configuration error. Minimum required role (${minimumRequiredRole}) is invalid.`,
+            `RoleMatchInfo is expected to be an object with at least one of minimumRequiredRole or roleIsOneOf specified`,
         )
+    }
 
-    } else if (minimumRequiredRole !== undefined && orgMemberInfo.userRole < minimumRequiredRole) {
-        throw new ForbiddenException(
-            `User's role ${orgMemberInfo.userRole} doesn't meet minimum required role`,
-        )
+    // If minimumRequiredRole is specified, make sure the user is at least that role
+    if (roleMatchInfo && roleMatchInfo.minimumRequiredRole !== undefined) {
+        const validMinimumRequiredRole = roleNameToIndex.hasOwnProperty(roleMatchInfo.minimumRequiredRole)
+        if (!validMinimumRequiredRole) {
+            throw new UnexpectedException(
+                `Configuration error: Minimum required role (${roleMatchInfo.minimumRequiredRole}) is invalid.`,
+            )
+        }
+
+        const validSpecifiedRole = roleNameToIndex.hasOwnProperty(orgMemberInfo.userRoleName)
+        if (!validSpecifiedRole) {
+            throw new UnexpectedException(
+                `Invalid user role (${roleMatchInfo.minimumRequiredRole}). Try restarting the server to get the latest role config`,
+            )
+        }
+
+        const minimumRequiredRoleIndex = roleNameToIndex[roleMatchInfo.minimumRequiredRole]
+        const userRoleIndex = roleNameToIndex[orgMemberInfo.userRoleName]
+        // If the minimum required role is before the user role in the list, error out
+        if (minimumRequiredRoleIndex < userRoleIndex) {
+            throw new ForbiddenException(
+                `User's role ${orgMemberInfo.userRoleName} doesn't meet minimum required role`,
+            )
+        }
+    }
+
+    // If roleIsOneOf is specified, make sure the user's role matches
+    if (roleMatchInfo && roleMatchInfo.roleIsOneOf !== undefined) {
+        let hasMatch = false
+        for (const roleName of roleMatchInfo.roleIsOneOf) {
+            if (orgMemberInfo.userRoleName === roleName) {
+                hasMatch = true;
+                break;
+            }
+        }
+        if (!hasMatch) {
+            throw new ForbiddenException(
+                `User's role ${orgMemberInfo.userRoleName} doesn't match expected roles`,
+            )
+        }
     }
 
     return orgMemberInfo
@@ -260,8 +292,7 @@ function orgNameMatches(orgName: string, orgMemberInfo: OrgMemberInfo) {
     return orgName === orgMemberInfo.orgName || orgName === orgMemberInfo.urlSafeOrgName
 }
 
-async function extractAndVerifyBearerToken(tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>, authorizationHeader: string | undefined) {
-    const tokenVerificationMetadata = await getTokenVerificationMetadata(tokenVerificationMetadataPromise)
+async function extractAndVerifyBearerToken(tokenVerificationMetadata: TokenVerificationMetadata, authorizationHeader: string | undefined) {
     const bearerToken = extractBearerToken(authorizationHeader)
     return verifyToken(bearerToken, tokenVerificationMetadata);
 }
@@ -308,8 +339,4 @@ async function getTokenVerificationMetadata(
     }
 
     return tokenVerificationMetadata
-}
-
-function isValidRole(role: UserRole | undefined) {
-    return role === undefined || role === UserRole.Owner || role === UserRole.Admin || role === UserRole.Member
 }
