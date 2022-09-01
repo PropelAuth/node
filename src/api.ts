@@ -299,7 +299,45 @@ export function updateUserMetadata(authUrl: URL, apiKey: string, userId: string,
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when creating user")
+                throw new Error("Unknown error when updating user metadata")
+            }
+
+            return true
+        })
+}
+
+export function deleteUser(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}`, "DELETE")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when deleting user")
+            }
+
+            return true
+        })
+}
+
+export function disableUser(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/disable`, "POST")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when disabling user")
             }
 
             return true

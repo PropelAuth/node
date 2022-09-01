@@ -3,7 +3,7 @@ import {
     addUserToOrg, AddUserToOrgRequest,
     createMagicLink, CreateMagicLinkRequest, createOrg, CreateOrgRequest,
     createUser,
-    CreateUserRequest,
+    CreateUserRequest, deleteUser, disableUser,
     fetchBatchUserMetadata,
     fetchOrg,
     fetchOrgByQuery,
@@ -115,6 +115,14 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return updateUserMetadata(authUrl, apiKey, userId, updateUserMetadataRequest)
     }
 
+    function deleteUserWrapper(userId: string): Promise<boolean> {
+        return deleteUser(authUrl, apiKey, userId)
+    }
+
+    function disableUserWrapper(userId: string): Promise<boolean> {
+        return disableUser(authUrl, apiKey, userId)
+    }
+
     function updateUserEmailWrapper(userId: string, updateUserEmailRequest: UpdateUserEmailRequest): Promise<boolean> {
         return updateUserEmail(authUrl, apiKey, userId, updateUserEmailRequest)
     }
@@ -156,6 +164,8 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         migrateUserFromExternalSource: migrateUserFromExternalSourceWrapper,
         createOrg: createOrgWrapper,
         addUserToOrg: addUserToOrgWrapper,
+        deleteUser: deleteUserWrapper,
+        disableUser: disableUserWrapper,
         UserRole,
     }
 }
