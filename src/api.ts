@@ -318,6 +318,63 @@ export function updateUserMetadata(authUrl: URL, apiKey: string, userId: string,
         })
 }
 
+export function deleteUser(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}`, "DELETE")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when deleting user")
+            }
+
+            return true
+        })
+}
+
+export function disableUser(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/disable`, "POST")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when disabling user")
+            }
+
+            return true
+        })
+}
+
+export function enableUser(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/enable`, "POST")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when disabling user")
+            }
+
+            return true
+        })
+}
+
 export type UpdateUserEmailRequest = {
     newEmail: string,
     requireEmailConfirmation: boolean,
