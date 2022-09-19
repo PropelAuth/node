@@ -344,6 +344,25 @@ export function disableUser(authUrl: URL, apiKey: string, userId: string): Promi
         })
 }
 
+export function enableUser(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/enable`, "POST")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when enabling user")
+            }
+
+            return true
+        })
+}
+
 export type UpdateUserEmailRequest = {
     newEmail: string,
     requireEmailConfirmation: boolean,
@@ -501,6 +520,45 @@ export function addUserToOrg(authUrl: URL, apiKey: string, addUserToOrgRequest: 
             return true
         })
 }
+
+export function allowOrgToSetupSamlConnection(authUrl: URL, apiKey: string, orgId: string): Promise<boolean> {
+    if (!isValidId(orgId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${orgId}/allow_saml`, "POST")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when allowing org to setup SAML connection")
+            }
+
+            return true
+        })
+}
+
+export function disallowOrgToSetupSamlConnection(authUrl: URL, apiKey: string, orgId: string): Promise<boolean> {
+    if (!isValidId(orgId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${orgId}/disallow_saml`, "POST")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when disallowing org to setup SAML connection")
+            }
+
+            return true
+        })
+}
+
 
 const idRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i;
 

@@ -1,9 +1,9 @@
 import jwt, {VerifyOptions} from "jsonwebtoken"
 import {
-    addUserToOrg, AddUserToOrgRequest,
+    addUserToOrg, AddUserToOrgRequest, allowOrgToSetupSamlConnection,
     createMagicLink, CreateMagicLinkRequest, createOrg, CreateOrgRequest,
     createUser,
-    CreateUserRequest, deleteUser, disableUser,
+    CreateUserRequest, deleteUser, disableUser, disallowOrgToSetupSamlConnection, enableUser,
     fetchBatchUserMetadata,
     fetchOrg,
     fetchOrgByQuery,
@@ -123,6 +123,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return disableUser(authUrl, apiKey, userId)
     }
 
+    function enableUserWrapper(userId: string): Promise<boolean> {
+        return enableUser(authUrl, apiKey, userId)
+    }
+
     function updateUserEmailWrapper(userId: string, updateUserEmailRequest: UpdateUserEmailRequest): Promise<boolean> {
         return updateUserEmail(authUrl, apiKey, userId, updateUserEmailRequest)
     }
@@ -141,6 +145,14 @@ export function initBaseAuth(opts: BaseAuthOptions) {
 
     function addUserToOrgWrapper(addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
         return addUserToOrg(authUrl, apiKey, addUserToOrgRequest)
+    }
+
+    function allowOrgToSetupSamlConnectionWrapper(orgId: string): Promise<boolean> {
+        return allowOrgToSetupSamlConnection(authUrl, apiKey, orgId)
+    }
+
+    function disallowOrgToSetupSamlConnectionWrapper(orgId: string): Promise<boolean> {
+        return disallowOrgToSetupSamlConnection(authUrl, apiKey, orgId)
     }
 
     return {
@@ -166,6 +178,9 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         addUserToOrg: addUserToOrgWrapper,
         deleteUser: deleteUserWrapper,
         disableUser: disableUserWrapper,
+        enableUser: enableUserWrapper,
+        allowOrgToSetupSamlConnection: allowOrgToSetupSamlConnectionWrapper,
+        disallowOrgToSetupSamlConnection: disallowOrgToSetupSamlConnectionWrapper,
         UserRole,
     }
 }
