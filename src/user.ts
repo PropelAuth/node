@@ -36,17 +36,14 @@ export type UserMetadata = {
     legacyUserId?: string
 }
 
-export enum UserRole {
-    Member = 0,
-    Admin = 1,
-    Owner = 2,
-}
-
 export type OrgMemberInfo = {
     orgId: string
     orgName: string
     urlSafeOrgName: string
-    userRole: UserRole
+
+    _userAssignedRole: string // new, with accomanying function: myRole() -> string
+    _userRoles: string[] // new, with accomanying function: canDoRole(role: string) -> boolean
+    _userPermissions: string[] // new, with accomanying function: hasPermission(permission: string) -> boolean
 }
 
 export type UserAndOrgMemberInfo = {
@@ -64,7 +61,9 @@ export type InternalOrgMemberInfo = {
     org_id: string
     org_name: string
     url_safe_org_name: string
-    user_role: string
+    user_assigned_role: string
+    user_roles: string[]
+    user_permissions: string[]
 }
 export type InternalUser = {
     user_id: string
@@ -97,7 +96,10 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
                 orgId: snakeCaseValue.org_id,
                 orgName: snakeCaseValue.org_name,
                 urlSafeOrgName: snakeCaseValue.url_safe_org_name,
-                userRole: toUserRole(snakeCaseValue.user_role),
+
+                _userAssignedRole: snakeCaseValue.user_assigned_role,
+                _userRoles: snakeCaseValue.user_roles,
+                _userPermissions: snakeCaseValue.user_permissions,
             }
         }
     }
@@ -105,17 +107,14 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
     return camelCase
 }
 
-export function toUserRole(userRole: string): UserRole {
-    return UserRole[userRole as keyof typeof UserRole]
+export function assignedRole(role: string, orgMemberInfo: OrgMemberInfo): boolean {
+    return orgMemberInfo._userAssignedRole == role
 }
 
-export function toUserRoleStr(userRole: UserRole): string {
-    switch (userRole) {
-        case UserRole.Owner:
-            return "Owner"
-        case UserRole.Admin:
-            return "Admin"
-        case UserRole.Member:
-            return "Member"
-    }
+export function canDoRole(role: string, orgMemberInfo: OrgMemberInfo): boolean {
+    return orgMemberInfo._userRoles.includes(role)
+}
+
+export function hasPermissions(permission: string, orgMemberInfo: OrgMemberInfo): boolean {
+    return orgMemberInfo._userPermissions.includes(permission)
 }

@@ -1,5 +1,5 @@
 import {httpRequest} from "./http"
-import {Org, toUserRole, toUserRoleStr, User, UserMetadata, UserRole} from "./user"
+import {Org, User, UserMetadata} from "./user"
 import {
     CreateUserException,
     UpdateUserMetadataException,
@@ -496,14 +496,14 @@ export function createOrg(authUrl: URL, apiKey: string, createOrgRequest: Create
 export type AddUserToOrgRequest = {
     userId: string
     orgId: string
-    role: UserRole
+    role: string
 }
 
 export function addUserToOrg(authUrl: URL, apiKey: string, addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
     const request = {
         user_id: addUserToOrgRequest.userId,
         org_id: addUserToOrgRequest.orgId,
-        role: toUserRoleStr(addUserToOrgRequest.role),
+        role: addUserToOrgRequest.role,
     }
     return httpRequest(authUrl, apiKey, `/api/backend/v1/org/add_user`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
@@ -514,7 +514,7 @@ export function addUserToOrg(authUrl: URL, apiKey: string, addUserToOrgRequest: 
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when creating org")
+                throw new Error("Unknown error when adding user to org")
             }
 
             return true
@@ -626,8 +626,12 @@ function parseUserMetadataAndOptionalPagingInfo(response: string) {
             this.orgId = value;
         } else if (key === "org_name") {
             this.orgName = value;
-        } else if (key === "user_role") {
-            this.userRole = toUserRole(value);
+        } else if (key === "user_assigned_role") {
+            this._userAssignedRole = value;
+        } else if (key === "user_roles") {
+            this._userRoles = value;
+        } else if (key === "user_permissions") {
+            this._userPermissions = value;
         } else if (key === "total_users") {
             this.totalUsers = value;
         } else if (key === "current_page") {
