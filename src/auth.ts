@@ -220,7 +220,7 @@ function validateOrgAccessAndGetOrgMemberInfo(user: User, requiredOrgInfo: Requi
         throw new ForbiddenException(`User is not a member of org ${JSON.stringify(requiredOrgInfo)}`)
     }
 
-    if (requiredRole !== undefined && canDoRole(requiredRole, orgMemberInfo)) {
+    if (requiredRole !== undefined && !canDoRole(requiredRole, orgMemberInfo)) {
         throw new ForbiddenException(
             `User's roles (${orgMemberInfo._userRoles}) don't contain the required role (${requiredRole})`,
         )
