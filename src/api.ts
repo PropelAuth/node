@@ -626,7 +626,7 @@ function parseUserMetadataAndOptionalPagingInfo(response: string) {
             this.orgId = value;
         } else if (key === "org_name") {
             this.orgName = value;
-        } else if (key === "user_assigned_role") {
+        } else if (key === "user_role") {
             this._userAssignedRole = value;
         } else if (key === "user_roles") {
             this._userRoles = value;

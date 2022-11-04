@@ -256,7 +256,7 @@ test("validateAccessTokenAndGetUserWithOrg fails for invalid access token", asyn
     expect(nock.isDone()).toBe(true)
 })
 
-test("validateAccessTokenAndGetUserWithOrg works with minimumRequiredRole", async () => {
+test("validateAccessTokenAndGetUserWithOrg works with requiredRole", async () => {
     const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
     const {validateAccessTokenAndGetUserWithOrg} = initBaseAuth({authUrl: AUTH_URL, apiKey})
 
