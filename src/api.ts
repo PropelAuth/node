@@ -627,11 +627,11 @@ function parseUserMetadataAndOptionalPagingInfo(response: string) {
         } else if (key === "org_name") {
             this.orgName = value;
         } else if (key === "user_role") {
-            this._userAssignedRole = value;
-        } else if (key === "user_roles") {
-            this._userRoles = value;
+            this.userAssignedRole = value;
+        } else if (key === "inherited_user_roles_plus_current_role") {
+            this.userRoles = value;
         } else if (key === "user_permissions") {
-            this._userPermissions = value;
+            this.userPermissions = value;
         } else if (key === "total_users") {
             this.totalUsers = value;
         } else if (key === "current_page") {

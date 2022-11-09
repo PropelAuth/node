@@ -58,7 +58,7 @@ export class OrgMemberInfo {
     // validation methods
 
     public isRole(role: string): boolean {
-        return this.userAssignedRole == role
+        return this.userAssignedRole === role
     }
 
     public isAtLeastRole(role: string): boolean {
@@ -103,7 +103,7 @@ export type InternalOrgMemberInfo = {
     org_id: string
     org_name: string
     url_safe_org_name: string
-    user_assigned_role: string
+    user_role: string
     inherited_user_roles_plus_current_role: string[]
     user_permissions: string[]
 }
@@ -138,7 +138,7 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
                 snakeCaseValue.org_id,
                 snakeCaseValue.org_name,
                 snakeCaseValue.url_safe_org_name,
-                snakeCaseValue.user_assigned_role,
+                snakeCaseValue.user_role,
                 snakeCaseValue.inherited_user_roles_plus_current_role,
                 snakeCaseValue.user_permissions,
             )
