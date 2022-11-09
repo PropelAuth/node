@@ -36,14 +36,56 @@ export type UserMetadata = {
     legacyUserId?: string
 }
 
-export type OrgMemberInfo = {
-    orgId: string
-    orgName: string
-    urlSafeOrgName: string
+export class OrgMemberInfo {
+    public orgId: string
+    public orgName: string
+    public urlSafeOrgName: string
 
-    _userAssignedRole: string // new, with accomanying function: myRole() -> string
-    _userRoles: string[] // new, with accomanying function: canDoRole(role: string) -> boolean
-    _userPermissions: string[] // new, with accomanying function: hasPermission(permission: string) -> boolean
+    private userAssignedRole: string
+    private userInheritedRolesPlusCurrentRole: string[]
+    private userPermissions: string[]
+
+    constructor(orgId: string, orgName: string, urlSafeOrgName: string, userAssignedRole: string, userInheritedRolesPlusCurrentRole: string[], userPermissions: string[]) {
+        this.orgId = orgId
+        this.orgName = orgName
+        this.urlSafeOrgName = urlSafeOrgName
+
+        this.userAssignedRole = userAssignedRole
+        this.userInheritedRolesPlusCurrentRole = userInheritedRolesPlusCurrentRole
+        this.userPermissions = userPermissions
+    }
+
+    // validation methods
+
+    public isRole(role: string): boolean {
+        return this.userAssignedRole == role
+    }
+
+    public isAtLeastRole(role: string): boolean {
+        return this.userInheritedRolesPlusCurrentRole.includes(role)
+    }
+
+    public hasPermission(permission: string): boolean {
+        return this.userPermissions.includes(permission)
+    }
+
+    public hasAllPermissions(permissions: string[]): boolean {
+        return permissions.every(permission => this.hasPermission(permission))
+    }
+
+    // getters for the private fields
+
+    get assignedRole(): string {
+        return this.userAssignedRole
+    }
+
+    get inheritedRolesPlusCurrentRole(): string[] {
+        return this.userInheritedRolesPlusCurrentRole
+    }
+
+    get permissions(): string[] {
+        return this.userPermissions
+    }
 }
 
 export type UserAndOrgMemberInfo = {
@@ -62,7 +104,7 @@ export type InternalOrgMemberInfo = {
     org_name: string
     url_safe_org_name: string
     user_assigned_role: string
-    user_roles: string[]
+    inherited_user_roles_plus_current_role: string[]
     user_permissions: string[]
 }
 export type InternalUser = {
@@ -92,29 +134,16 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
     for (const key of Object.keys(snake_case)) {
         const snakeCaseValue = snake_case[key]
         if (snakeCaseValue) {
-            camelCase[key] = {
-                orgId: snakeCaseValue.org_id,
-                orgName: snakeCaseValue.org_name,
-                urlSafeOrgName: snakeCaseValue.url_safe_org_name,
-
-                _userAssignedRole: snakeCaseValue.user_assigned_role,
-                _userRoles: snakeCaseValue.user_roles,
-                _userPermissions: snakeCaseValue.user_permissions,
-            }
+            camelCase[key] = new OrgMemberInfo(
+                snakeCaseValue.org_id,
+                snakeCaseValue.org_name,
+                snakeCaseValue.url_safe_org_name,
+                snakeCaseValue.user_assigned_role,
+                snakeCaseValue.inherited_user_roles_plus_current_role,
+                snakeCaseValue.user_permissions,
+            )
         }
     }
 
     return camelCase
-}
-
-export function assignedRole(role: string, orgMemberInfo: OrgMemberInfo): boolean {
-    return orgMemberInfo._userAssignedRole == role
-}
-
-export function canDoRole(role: string, orgMemberInfo: OrgMemberInfo): boolean {
-    return orgMemberInfo._userRoles.includes(role)
-}
-
-export function hasPermissions(permission: string, orgMemberInfo: OrgMemberInfo): boolean {
-    return orgMemberInfo._userPermissions.includes(permission)
 }
