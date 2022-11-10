@@ -2,10 +2,12 @@ import {generateKeyPair} from "crypto"
 import jwt from "jsonwebtoken"
 import nock from "nock"
 import {v4 as uuid} from "uuid"
+
 import {initBaseAuth} from "../src"
-import {InternalOrgMemberInfo, InternalUser, toUser, User, UserRole} from "../src/user"
 import {TokenVerificationMetadata} from "../src/api";
+import {RequiredOrgInfo} from "../src/auth"
 import {ForbiddenException, UnauthorizedException, UnexpectedException} from "../src/exceptions";
+import {InternalOrgMemberInfo, OrgMemberInfo, InternalUser, toUser, User} from "../src/user"
 
 const AUTH_URL = "https://auth.example.com"
 const ALGO = "RS256"
@@ -103,7 +105,6 @@ test("validateAccessTokenAndGetUser rejects missing authorization header", async
         .rejects
         .toThrow(UnauthorizedException)
 
-
     expect(nock.isDone()).toBe(true)
 })
 
@@ -143,44 +144,58 @@ test("toUser converts correctly with orgs", async () => {
                 org_name: "orgA",
                 url_safe_org_name: "orga",
                 user_role: "Owner",
+                inherited_user_roles_plus_current_role: ["Owner", "Admin", "Member"],
+                user_permissions: [],
             },
             "4ca20d17-5021-4d62-8b3d-148214fa8d6d": {
                 org_id: "4ca20d17-5021-4d62-8b3d-148214fa8d6d",
                 org_name: "orgB",
                 url_safe_org_name: "orgb",
                 user_role: "Admin",
+                inherited_user_roles_plus_current_role: ["Admin", "Member"],
+                user_permissions: [],
             },
             "15a31d0c-d284-4e7b-80a2-afb23f939cc3": {
                 org_id: "15a31d0c-d284-4e7b-80a2-afb23f939cc3",
                 org_name: "orgC",
                 url_safe_org_name: "orgc",
                 user_role: "Member",
+                inherited_user_roles_plus_current_role: ["Member"],
+                user_permissions: [],
             },
         },
     }
+
     const user: User = {
         userId: "cbf064e2-edaa-4d35-b413-a8d857329c12",
         orgIdToOrgMemberInfo: {
-            "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a": {
-                orgId: "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
-                orgName: "orgA",
-                urlSafeOrgName: "orga",
-                userRole: UserRole.Owner,
-            },
-            "4ca20d17-5021-4d62-8b3d-148214fa8d6d": {
-                orgId: "4ca20d17-5021-4d62-8b3d-148214fa8d6d",
-                orgName: "orgB",
-                urlSafeOrgName: "orgb",
-                userRole: UserRole.Admin,
-            },
-            "15a31d0c-d284-4e7b-80a2-afb23f939cc3": {
-                orgId: "15a31d0c-d284-4e7b-80a2-afb23f939cc3",
-                orgName: "orgC",
-                urlSafeOrgName: "orgc",
-                userRole: UserRole.Member,
-            },
+            "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a": new OrgMemberInfo(
+                "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
+                "orgA",
+                "orga",
+                "Owner",
+                ["Owner", "Admin", "Member"],
+                [],
+            ),
+            "4ca20d17-5021-4d62-8b3d-148214fa8d6d": new OrgMemberInfo(
+                "4ca20d17-5021-4d62-8b3d-148214fa8d6d",
+                "orgB",
+                "orgb",
+                "Admin",
+                ["Admin", "Member"],
+                [],
+            ),
+            "15a31d0c-d284-4e7b-80a2-afb23f939cc3": new OrgMemberInfo(
+                "15a31d0c-d284-4e7b-80a2-afb23f939cc3",
+                "orgC",
+                "orgc",
+                "Member",
+                ["Member"],
+                [],
+            )
         },
     }
+
     expect(toUser(internalUser)).toEqual(user)
 })
 
@@ -196,9 +211,9 @@ test("toUser converts correctly without orgs", async () => {
     expect(toUser(internalUser)).toEqual(user)
 })
 
-test("validateAccessTokenAndGetUserWithOrg get user and org for extracted org", async () => {
+test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole get user and org for extracted org", async () => {
     const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
-    const {validateAccessTokenAndGetUserWithOrg} = initBaseAuth({authUrl: AUTH_URL, apiKey})
+    const {validateAccessTokenAndGetUserWithOrgInfo} = initBaseAuth({authUrl: AUTH_URL, apiKey})
 
     const orgMemberInfo = randomOrg()
     const internalUser: InternalUser = {
@@ -207,9 +222,13 @@ test("validateAccessTokenAndGetUserWithOrg get user and org for extracted org", 
             [orgMemberInfo.org_id]: orgMemberInfo,
         },
     }
+    const orgInfo: RequiredOrgInfo = {
+        orgId: orgMemberInfo.org_id,
+        orgName: orgMemberInfo.org_name,
+    }
     const accessToken = createAccessToken({internalUser, privateKey})
 
-    const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrg(`Bearer ${accessToken}`, orgMemberInfo.org_id)
+    const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrgInfo(`Bearer ${accessToken}`, orgInfo)
 
     const user = toUser(internalUser)
     expect(userAndOrgMemberInfo.user).toEqual(user)
@@ -217,57 +236,70 @@ test("validateAccessTokenAndGetUserWithOrg get user and org for extracted org", 
     expect(nock.isDone()).toBe(true)
 })
 
-test("validateAccessTokenAndGetUserWithOrg fails for valid access token but unknown org", async () => {
+test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole fails for valid access token but unknown org", async () => {
     const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
-    const {validateAccessTokenAndGetUserWithOrg} = initBaseAuth({authUrl: AUTH_URL, apiKey})
+    const {validateAccessTokenAndGetUserWithOrgInfo} = initBaseAuth({authUrl: AUTH_URL, apiKey})
 
     const internalUser: InternalUser = {
         user_id: uuid(),
     }
+    const orgInfo: RequiredOrgInfo = {
+        orgId: uuid(),
+        orgName: "orgName",
+    }
     const accessToken = createAccessToken({internalUser, privateKey})
 
-    await expect(validateAccessTokenAndGetUserWithOrg(`Bearer ${accessToken}`, uuid()))
+    await expect(validateAccessTokenAndGetUserWithOrgInfo(`Bearer ${accessToken}`, orgInfo))
         .rejects
         .toThrow(ForbiddenException)
 
     expect(nock.isDone()).toBe(true)
 })
 
-test("validateAccessTokenAndGetUserWithOrg fails for invalid access token", async () => {
+test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole fails for invalid access token", async () => {
     const {apiKey} = await setupTokenVerificationMetadataEndpoint()
-    const {validateAccessTokenAndGetUserWithOrg} = initBaseAuth({authUrl: AUTH_URL, apiKey})
+    const {validateAccessTokenAndGetUserWithOrgInfo} = initBaseAuth({authUrl: AUTH_URL, apiKey})
 
-    await expect(validateAccessTokenAndGetUserWithOrg(undefined, uuid()))
+    const orgInfo: RequiredOrgInfo = {
+        orgId: uuid(),
+        orgName: "orgName",
+    }
+    
+    await expect(validateAccessTokenAndGetUserWithOrgInfo(undefined, orgInfo))
         .rejects
         .toThrow(UnauthorizedException)
 
     expect(nock.isDone()).toBe(true)
 })
 
-test("validateAccessTokenAndGetUserWithOrg works with minimumRequiredRole", async () => {
+test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole works with miniumumRole", async () => {
     const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
-    const {validateAccessTokenAndGetUserWithOrg} = initBaseAuth({authUrl: AUTH_URL, apiKey})
+    const {validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole} = initBaseAuth({authUrl: AUTH_URL, apiKey})
 
-    const orgMemberInfo = randomOrg("Admin")
+    const orgMemberInfo = randomOrg()
     const internalUser: InternalUser = {
         user_id: uuid(),
         org_id_to_org_member_info: {
             [orgMemberInfo.org_id]: orgMemberInfo,
         },
     }
+    const orgInfo: RequiredOrgInfo = {
+        orgId: orgMemberInfo.org_id,
+        orgName: orgMemberInfo.org_name,
+    }
     const user = toUser(internalUser)
     const accessToken = createAccessToken({internalUser, privateKey})
 
-    const rolesThatShouldSucceed = new Set([UserRole.Admin, UserRole.Member])
-    for (let role of [UserRole.Owner, UserRole.Admin, UserRole.Member]) {
+    const rolesThatShouldSucceed = new Set(["Admin", "Member"])
+    for (let role of ["Owner", "Admin", "Member"]) {
         const authHeader = `Bearer ${accessToken}`
 
         if (rolesThatShouldSucceed.has(role)) {
-            const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrg(authHeader, orgMemberInfo.org_id, role)
+            const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole(authHeader, orgInfo, role)
             expect(userAndOrgMemberInfo.user).toEqual(user)
             expect(userAndOrgMemberInfo.orgMemberInfo).toEqual(user.orgIdToOrgMemberInfo && user.orgIdToOrgMemberInfo[orgMemberInfo.org_id])
         } else {
-            await expect(validateAccessTokenAndGetUserWithOrg(authHeader, orgMemberInfo.org_id, role))
+            await expect(validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole(authHeader, orgInfo, role))
                 .rejects
                 .toThrow(ForbiddenException)
         }
@@ -275,26 +307,114 @@ test("validateAccessTokenAndGetUserWithOrg works with minimumRequiredRole", asyn
     expect(nock.isDone()).toBe(true)
 })
 
-test("validateAccessTokenAndGetUserWithOrg fails with invalid minimumRequiredRole", async () => {
+test("validateAccessTokenAndGetUserWithOrgWithExactRole works with requiredRole", async () => {
     const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
-    const {validateAccessTokenAndGetUserWithOrg} = initBaseAuth({authUrl: AUTH_URL, apiKey})
+    const {validateAccessTokenAndGetUserWithOrgInfoWithExactRole} = initBaseAuth({authUrl: AUTH_URL, apiKey})
 
-    const orgMemberInfo = randomOrg("Admin")
+    const orgMemberInfo = randomOrg()
     const internalUser: InternalUser = {
         user_id: uuid(),
         org_id_to_org_member_info: {
             [orgMemberInfo.org_id]: orgMemberInfo,
         },
     }
+    const orgInfo: RequiredOrgInfo = {
+        orgId: orgMemberInfo.org_id,
+        orgName: orgMemberInfo.org_name,
+    }
+    const user = toUser(internalUser)
     const accessToken = createAccessToken({internalUser, privateKey})
 
-    // @ts-ignore
-    await expect(validateAccessTokenAndGetUserWithOrg(`Bearer ${accessToken}`, orgMemberInfo.org_id, "js problems"))
-        .rejects
-        .toThrow(UnexpectedException)
+    const rolesThatShouldSucceed = new Set(["Admin"])
+    for (let role of ["Owner", "Admin", "Member"]) {
+        const authHeader = `Bearer ${accessToken}`
+
+        if (rolesThatShouldSucceed.has(role)) {
+            const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrgInfoWithExactRole(authHeader, orgInfo, role)
+            expect(userAndOrgMemberInfo.user).toEqual(user)
+            expect(userAndOrgMemberInfo.orgMemberInfo).toEqual(user.orgIdToOrgMemberInfo && user.orgIdToOrgMemberInfo[orgMemberInfo.org_id])
+        } else {
+            await expect(validateAccessTokenAndGetUserWithOrgInfoWithExactRole(authHeader, orgInfo, role))
+                .rejects
+                .toThrow(ForbiddenException)
+        }
+    }
+    expect(nock.isDone()).toBe(true)
+})
+
+test("validateAccessTokenAndGetUserWithOrgWithPermission works with permission", async () => {
+    const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
+    const {validateAccessTokenAndGetUserWithOrgInfoWithPermission} = initBaseAuth({authUrl: AUTH_URL, apiKey})
+
+    const orgMemberInfo = randomOrg()
+    const internalUser: InternalUser = {
+        user_id: uuid(),
+        org_id_to_org_member_info: {
+            [orgMemberInfo.org_id]: orgMemberInfo,
+        },
+    }
+    const orgInfo: RequiredOrgInfo = {
+        orgId: orgMemberInfo.org_id,
+        orgName: orgMemberInfo.org_name,
+    }
+    const user = toUser(internalUser)
+    const accessToken = createAccessToken({internalUser, privateKey})
+
+    const permissionsThatShouldSucceed = new Set(["read", "write"])
+    for (let permission of ["read", "write", "delete"]) {
+        const authHeader = `Bearer ${accessToken}`
+
+        if (permissionsThatShouldSucceed.has(permission)) {
+            const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrgInfoWithPermission(authHeader, orgInfo, permission)
+            expect(userAndOrgMemberInfo.user).toEqual(user)
+            expect(userAndOrgMemberInfo.orgMemberInfo).toEqual(user.orgIdToOrgMemberInfo && user.orgIdToOrgMemberInfo[orgMemberInfo.org_id])
+        } else {
+            await expect(validateAccessTokenAndGetUserWithOrgInfoWithPermission(authHeader, orgInfo, permission))
+                .rejects
+                .toThrow(ForbiddenException)
+        }
+    }
+    expect(nock.isDone()).toBe(true)
+})
+
+test("validateAccessTokenAndGetUserWithOrgWithAllPermissions works with permission", async () => {
+    const {apiKey, privateKey} = await setupTokenVerificationMetadataEndpoint()
+    const {validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions} = initBaseAuth({authUrl: AUTH_URL, apiKey})
+
+    const orgMemberInfo = randomOrg()
+    const internalUser: InternalUser = {
+        user_id: uuid(),
+        org_id_to_org_member_info: {
+            [orgMemberInfo.org_id]: orgMemberInfo,
+        },
+    }
+    const orgInfo: RequiredOrgInfo = {
+        orgId: orgMemberInfo.org_id,
+        orgName: orgMemberInfo.org_name,
+    }
+    const user = toUser(internalUser)
+    const accessToken = createAccessToken({internalUser, privateKey})
+
+    // these should succeed
+    for (let permissions of [["read"], ["write"], ["read", "write"], []]) {
+        const authHeader = `Bearer ${accessToken}`
+        const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(authHeader, orgInfo, permissions)
+        expect(userAndOrgMemberInfo.user).toEqual(user)
+        expect(userAndOrgMemberInfo.orgMemberInfo).toEqual(user.orgIdToOrgMemberInfo && user.orgIdToOrgMemberInfo[orgMemberInfo.org_id])
+    }
+
+    // these should throw an error
+    for (let permissions of [["read", "write", "delete"], ["delete"]]) {
+        const authHeader = `Bearer ${accessToken}`
+        await expect(validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(authHeader, orgInfo, permissions))
+            .rejects
+            .toThrow(ForbiddenException)
+    }
 
     expect(nock.isDone()).toBe(true)
 })
+
+// helper functions
 
 async function setupTokenVerificationMetadataEndpoint() {
     const {publicKey, privateKey} = await generateRsaKeyPair()
@@ -382,20 +502,17 @@ function randomOrgIdToOrgMemberInfo(): { [org_id: string]: InternalOrgMemberInfo
     return orgIdToOrgMemberInfo
 }
 
-function randomOrg(userRole?: string): InternalOrgMemberInfo {
+function randomOrg(): InternalOrgMemberInfo {
     const orgName = randomString()
     const urlSafeOrgName = orgName.replace(" ", "_").toLowerCase()
     return {
         org_id: uuid(),
         org_name: randomString(),
         url_safe_org_name: urlSafeOrgName,
-        user_role: userRole || choose(["Owner", "Admin", "Member"]),
+        user_role: "Admin",
+        inherited_user_roles_plus_current_role: ["Admin", "Member"],
+        user_permissions: ["read", "write"],
     }
-}
-
-function choose<T>(choices: T[]) {
-    const index = Math.floor(Math.random() * choices.length)
-    return choices[index]
 }
 
 interface CreateAccessTokenArgs {

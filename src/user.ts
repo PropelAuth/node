@@ -36,17 +36,56 @@ export type UserMetadata = {
     legacyUserId?: string
 }
 
-export enum UserRole {
-    Member = 0,
-    Admin = 1,
-    Owner = 2,
-}
+export class OrgMemberInfo {
+    public orgId: string
+    public orgName: string
+    public urlSafeOrgName: string
 
-export type OrgMemberInfo = {
-    orgId: string
-    orgName: string
-    urlSafeOrgName: string
-    userRole: UserRole
+    private userAssignedRole: string
+    private userInheritedRolesPlusCurrentRole: string[]
+    private userPermissions: string[]
+
+    constructor(orgId: string, orgName: string, urlSafeOrgName: string, userAssignedRole: string, userInheritedRolesPlusCurrentRole: string[], userPermissions: string[]) {
+        this.orgId = orgId
+        this.orgName = orgName
+        this.urlSafeOrgName = urlSafeOrgName
+
+        this.userAssignedRole = userAssignedRole
+        this.userInheritedRolesPlusCurrentRole = userInheritedRolesPlusCurrentRole
+        this.userPermissions = userPermissions
+    }
+
+    // validation methods
+
+    public isRole(role: string): boolean {
+        return this.userAssignedRole === role
+    }
+
+    public isAtLeastRole(role: string): boolean {
+        return this.userInheritedRolesPlusCurrentRole.includes(role)
+    }
+
+    public hasPermission(permission: string): boolean {
+        return this.userPermissions.includes(permission)
+    }
+
+    public hasAllPermissions(permissions: string[]): boolean {
+        return permissions.every(permission => this.hasPermission(permission))
+    }
+
+    // getters for the private fields
+
+    get assignedRole(): string {
+        return this.userAssignedRole
+    }
+
+    get inheritedRolesPlusCurrentRole(): string[] {
+        return this.userInheritedRolesPlusCurrentRole
+    }
+
+    get permissions(): string[] {
+        return this.userPermissions
+    }
 }
 
 export type UserAndOrgMemberInfo = {
@@ -65,6 +104,8 @@ export type InternalOrgMemberInfo = {
     org_name: string
     url_safe_org_name: string
     user_role: string
+    inherited_user_roles_plus_current_role: string[]
+    user_permissions: string[]
 }
 export type InternalUser = {
     user_id: string
@@ -93,29 +134,16 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
     for (const key of Object.keys(snake_case)) {
         const snakeCaseValue = snake_case[key]
         if (snakeCaseValue) {
-            camelCase[key] = {
-                orgId: snakeCaseValue.org_id,
-                orgName: snakeCaseValue.org_name,
-                urlSafeOrgName: snakeCaseValue.url_safe_org_name,
-                userRole: toUserRole(snakeCaseValue.user_role),
-            }
+            camelCase[key] = new OrgMemberInfo(
+                snakeCaseValue.org_id,
+                snakeCaseValue.org_name,
+                snakeCaseValue.url_safe_org_name,
+                snakeCaseValue.user_role,
+                snakeCaseValue.inherited_user_roles_plus_current_role,
+                snakeCaseValue.user_permissions,
+            )
         }
     }
 
     return camelCase
-}
-
-export function toUserRole(userRole: string): UserRole {
-    return UserRole[userRole as keyof typeof UserRole]
-}
-
-export function toUserRoleStr(userRole: UserRole): string {
-    switch (userRole) {
-        case UserRole.Owner:
-            return "Owner"
-        case UserRole.Admin:
-            return "Admin"
-        case UserRole.Member:
-            return "Member"
-    }
 }

@@ -1,4 +1,4 @@
-export {initBaseAuth, BaseAuthOptions, RequriedOrgInfo} from "./auth"
+export {initBaseAuth, BaseAuthOptions, RequiredOrgInfo as RequriedOrgInfo} from "./auth"
 export {
     TokenVerificationMetadata,
     OrgQueryResponse,
@@ -34,7 +34,5 @@ export {
     UserAndOrgMemberInfo,
     InternalUser,
     toOrgIdToOrgMemberInfo,
-    UserRole,
     UserMetadata,
-    toUserRole
 } from "./user"
