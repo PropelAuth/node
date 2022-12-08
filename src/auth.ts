@@ -1,9 +1,18 @@
 import jwt, {VerifyOptions} from "jsonwebtoken"
 import {
-    addUserToOrg, AddUserToOrgRequest, allowOrgToSetupSamlConnection,
-    createMagicLink, CreateMagicLinkRequest, createOrg, CreateOrgRequest,
+    addUserToOrg,
+    AddUserToOrgRequest,
+    allowOrgToSetupSamlConnection, changeUserRoleInOrg, ChangeUserRoleInOrgRequest,
+    createMagicLink,
+    CreateMagicLinkRequest,
+    createOrg,
+    CreateOrgRequest,
     createUser,
-    CreateUserRequest, deleteUser, disableUser, disallowOrgToSetupSamlConnection, enableUser,
+    CreateUserRequest,
+    deleteUser,
+    disableUser, disableUser2fa,
+    disallowOrgToSetupSamlConnection,
+    enableUser,
     fetchBatchUserMetadata,
     fetchOrg,
     fetchOrgByQuery,
@@ -11,10 +20,18 @@ import {
     fetchUserMetadataByQuery,
     fetchUserMetadataByUserIdWithIdCheck,
     fetchUsersByQuery,
-    fetchUsersInOrg, MagicLink, migrateUserFromExternalSource, MigrateUserFromExternalSourceRequest,
+    fetchUsersInOrg,
+    MagicLink,
+    migrateUserFromExternalSource,
+    MigrateUserFromExternalSourceRequest,
     OrgQuery,
-    OrgQueryResponse,
-    TokenVerificationMetadata, updateUserEmail, UpdateUserEmailRequest, updateUserMetadata, UpdateUserMetadataRequest,
+    OrgQueryResponse, removeUserFromOrg, RemoveUserFromOrgRequest,
+    TokenVerificationMetadata, updateOrg, UpdateOrgRequest,
+    updateUserEmail,
+    UpdateUserEmailRequest,
+    updateUserMetadata,
+    UpdateUserMetadataRequest, updateUserPassword,
+    UpdateUserPasswordRequest,
     UsersInOrgQuery,
     UsersPagedResponse,
     UsersQuery,
@@ -129,8 +146,16 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return enableUser(authUrl, apiKey, userId)
     }
 
+    function disableUser2faWrapper(userId: string): Promise<boolean> {
+        return disableUser2fa(authUrl, apiKey, userId)
+    }
+
     function updateUserEmailWrapper(userId: string, updateUserEmailRequest: UpdateUserEmailRequest): Promise<boolean> {
         return updateUserEmail(authUrl, apiKey, userId, updateUserEmailRequest)
+    }
+
+    function updateUserPasswordWrapper(userId: string, updateUserPasswordRequest: UpdateUserPasswordRequest): Promise<boolean> {
+        return updateUserPassword(authUrl, apiKey, userId, updateUserPasswordRequest)
     }
 
     function createMagicLinkWrapper(createMagicLinkRequest: CreateMagicLinkRequest): Promise<MagicLink> {
@@ -147,6 +172,18 @@ export function initBaseAuth(opts: BaseAuthOptions) {
 
     function addUserToOrgWrapper(addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
         return addUserToOrg(authUrl, apiKey, addUserToOrgRequest)
+    }
+
+    function changeUserRoleInOrgWrapper(changeUserRoleInOrgRequest: ChangeUserRoleInOrgRequest): Promise<boolean> {
+        return changeUserRoleInOrg(authUrl, apiKey, changeUserRoleInOrgRequest)
+    }
+
+    function removeUserFromOrgWrapper(removeUserFromOrgRequest: RemoveUserFromOrgRequest): Promise<boolean> {
+        return removeUserFromOrg(authUrl, apiKey, removeUserFromOrgRequest)
+    }
+
+    function updateOrgWrapper(updateOrgRequest: UpdateOrgRequest): Promise<boolean> {
+        return updateOrg(authUrl, apiKey, updateOrgRequest)
     }
 
     function allowOrgToSetupSamlConnectionWrapper(orgId: string): Promise<boolean> {
@@ -180,14 +217,20 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         createUser: createUserWrapper,
         updateUserMetadata: updateUserMetadataWrapper,
         updateUserEmail: updateUserEmailWrapper,
+        updateUserPassword: updateUserPasswordWrapper,
         createMagicLink: createMagicLinkWrapper,
         migrateUserFromExternalSource: migrateUserFromExternalSourceWrapper,
         deleteUser: deleteUserWrapper,
         disableUser: disableUserWrapper,
         enableUser: enableUserWrapper,
+        disableUser2fa: disableUser2faWrapper,
+
         // org management functions
         createOrg: createOrgWrapper,
         addUserToOrg: addUserToOrgWrapper,
+        changeUserRoleInOrg: changeUserRoleInOrgWrapper,
+        removeUserFromOrg: removeUserFromOrgWrapper,
+        updateOrg: updateOrgWrapper,
         allowOrgToSetupSamlConnection: allowOrgToSetupSamlConnectionWrapper,
         disallowOrgToSetupSamlConnection: disallowOrgToSetupSamlConnectionWrapper,
     }

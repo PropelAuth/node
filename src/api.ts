@@ -4,7 +4,11 @@ import {
     CreateUserException,
     UpdateUserMetadataException,
     UpdateUserEmailException,
-    MagicLinkCreationException, MigrateUserException, CreateOrgException, AddUserToOrgException
+    MagicLinkCreationException,
+    MigrateUserException,
+    CreateOrgException,
+    AddUserToOrgException,
+    UpdateUserPasswordException, ChangeUserRoleInOrgException, RemoveUserFromOrgException, UpdateOrgException
 } from "./exceptions";
 
 export type TokenVerificationMetadata = {
@@ -278,6 +282,7 @@ export type UpdateUserMetadataRequest = {
     username?: string,
     firstName?: string,
     lastName?: string,
+    pictureUrl?: string
 }
 
 export function updateUserMetadata(authUrl: URL, apiKey: string, userId: string, updateUserMetadataRequest: UpdateUserMetadataRequest): Promise<boolean> {
@@ -289,6 +294,7 @@ export function updateUserMetadata(authUrl: URL, apiKey: string, userId: string,
         username: updateUserMetadataRequest.username,
         first_name: updateUserMetadataRequest.firstName,
         last_name: updateUserMetadataRequest.lastName,
+        picture_url: updateUserMetadataRequest.pictureUrl,
     }
     return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}`, "PUT", JSON.stringify(request))
         .then((httpResponse) => {
@@ -363,6 +369,25 @@ export function enableUser(authUrl: URL, apiKey: string, userId: string): Promis
         })
 }
 
+export function disableUser2fa(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/disable_2fa`, "POST")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when disabling 2FA")
+            }
+
+            return true
+        })
+}
+
 export type UpdateUserEmailRequest = {
     newEmail: string,
     requireEmailConfirmation: boolean,
@@ -387,6 +412,34 @@ export function updateUserEmail(authUrl: URL, apiKey: string, userId: string, up
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
                 throw new Error("Unknown error when creating user")
+            }
+
+            return true
+        })
+}
+
+export type UpdateUserPasswordRequest = {
+    password: string
+}
+
+export function updateUserPassword(authUrl: URL, apiKey: string, userId: string, updateUserPasswordRequest: UpdateUserPasswordRequest): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    const request = {
+        password: updateUserPasswordRequest.password,
+    }
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/password`, "PUT", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new UpdateUserPasswordException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when updating password")
             }
 
             return true
@@ -520,6 +573,92 @@ export function addUserToOrg(authUrl: URL, apiKey: string, addUserToOrgRequest: 
             return true
         })
 }
+
+export type ChangeUserRoleInOrgRequest = {
+    userId: string
+    orgId: string
+    role: string
+}
+
+export function changeUserRoleInOrg(authUrl: URL, apiKey: string, changeUserRoleInOrgRequest: ChangeUserRoleInOrgRequest): Promise<boolean> {
+    const request = {
+        user_id: changeUserRoleInOrgRequest.userId,
+        org_id: changeUserRoleInOrgRequest.orgId,
+        role: changeUserRoleInOrgRequest.role,
+    }
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/change_role`, "POST", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new ChangeUserRoleInOrgException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when changing users role in org")
+            }
+
+            return true
+        })
+}
+
+export type RemoveUserFromOrgRequest = {
+    userId: string
+    orgId: string
+}
+
+export function removeUserFromOrg(authUrl: URL, apiKey: string, removeUserFromOrgRequest: RemoveUserFromOrgRequest): Promise<boolean> {
+    const request = {
+        user_id: removeUserFromOrgRequest.userId,
+        org_id: removeUserFromOrgRequest.orgId,
+    }
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/remove_user`, "POST", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new RemoveUserFromOrgException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when removing users from org")
+            }
+
+            return true
+        })
+}
+
+export type UpdateOrgRequest = {
+    orgId: string
+    name?: string
+    canSetupSaml?: boolean
+}
+
+export function updateOrg(authUrl: URL, apiKey: string, updateOrgRequest: UpdateOrgRequest): Promise<boolean> {
+    if (!isValidId(updateOrgRequest.orgId)) {
+        return Promise.resolve(false)
+    }
+
+    const request = {
+        name: updateOrgRequest.name,
+        can_setup_saml: updateOrgRequest.canSetupSaml,
+    }
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${updateOrgRequest.orgId}`, "PUT", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new UpdateOrgException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when updating org")
+            }
+
+            return true
+        })
+}
+
 
 export function allowOrgToSetupSamlConnection(authUrl: URL, apiKey: string, orgId: string): Promise<boolean> {
     if (!isValidId(orgId)) {

@@ -30,6 +30,30 @@ export class AddUserToOrgException extends Error {
     }
 }
 
+export class ChangeUserRoleInOrgException extends Error {
+    readonly fieldToErrors: {[fieldName: string]: string[]};
+    constructor(message: string) {
+        super(message);
+        this.fieldToErrors = JSON.parse(message);
+    }
+}
+
+export class RemoveUserFromOrgException extends Error {
+    readonly fieldToErrors: {[fieldName: string]: string[]};
+    constructor(message: string) {
+        super(message);
+        this.fieldToErrors = JSON.parse(message);
+    }
+}
+
+export class UpdateOrgException extends Error {
+    readonly fieldToErrors: {[fieldName: string]: string[]};
+    constructor(message: string) {
+        super(message);
+        this.fieldToErrors = JSON.parse(message);
+    }
+}
+
 export class ForbiddenException extends Error {
     readonly message: string;
     readonly status: number;
@@ -69,6 +93,14 @@ export class UnexpectedException extends Error {
 }
 
 export class UpdateUserEmailException extends Error {
+    readonly fieldToErrors: {[fieldName: string]: string[]};
+    constructor(message: string) {
+        super(message);
+        this.fieldToErrors = JSON.parse(message);
+    }
+}
+
+export class UpdateUserPasswordException extends Error {
     readonly fieldToErrors: {[fieldName: string]: string[]};
     constructor(message: string) {
         super(message);
