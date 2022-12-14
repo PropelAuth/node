@@ -8,7 +8,7 @@ import {
     createOrg,
     CreateOrgRequest,
     createUser,
-    CreateUserRequest,
+    CreateUserRequest, deleteOrg,
     deleteUser,
     disableUser, disableUser2fa,
     disallowOrgToSetupSamlConnection,
@@ -186,6 +186,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return updateOrg(authUrl, apiKey, updateOrgRequest)
     }
 
+    function deleteOrgWrapper(orgId: string): Promise<boolean> {
+        return deleteOrg(authUrl, apiKey, orgId)
+    }
+
     function allowOrgToSetupSamlConnectionWrapper(orgId: string): Promise<boolean> {
         return allowOrgToSetupSamlConnection(authUrl, apiKey, orgId)
     }
@@ -231,6 +235,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         changeUserRoleInOrg: changeUserRoleInOrgWrapper,
         removeUserFromOrg: removeUserFromOrgWrapper,
         updateOrg: updateOrgWrapper,
+        deleteOrg: deleteOrgWrapper,
         allowOrgToSetupSamlConnection: allowOrgToSetupSamlConnectionWrapper,
         disallowOrgToSetupSamlConnection: disallowOrgToSetupSamlConnectionWrapper,
     }

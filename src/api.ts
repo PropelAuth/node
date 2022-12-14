@@ -659,6 +659,25 @@ export function updateOrg(authUrl: URL, apiKey: string, updateOrgRequest: Update
         })
 }
 
+export function deleteOrg(authUrl: URL, apiKey: string, orgId: string): Promise<boolean> {
+    if (!isValidId(orgId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${orgId}`, "DELETE")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when deleting org")
+            }
+
+            return true
+        })
+}
+
 
 export function allowOrgToSetupSamlConnection(authUrl: URL, apiKey: string, orgId: string): Promise<boolean> {
     if (!isValidId(orgId)) {
