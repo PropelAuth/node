@@ -1,4 +1,11 @@
-export {initBaseAuth, BaseAuthOptions, RequiredOrgInfo as RequriedOrgInfo} from "./auth"
+export {
+    initBaseAuth,
+    BaseAuthOptions,
+    RequiredOrgInfo as RequriedOrgInfo,
+    handleError,
+    HandleErrorResponse,
+    HandleErrorOptions
+} from "./auth"
 export {
     TokenVerificationMetadata,
     OrgQueryResponse,
