@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/PropelAuth/node"
   },
-  "version": "v2.0.1",
+  "version": "v2.0.2",
   "license": "MIT",
   "keywords": [
     "auth",
@@ -12,7 +12,7 @@
     "user"
   ],
   "dependencies": {
-    "jsonwebtoken": "^8.5.1"
+    "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^19.0.0",
