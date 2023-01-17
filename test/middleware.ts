@@ -454,7 +454,7 @@ function createAccessToken({internalUser, privateKey, expiresIn, issuer}: Create
 
 async function generateRsaKeyPair(): Promise<{ publicKey: string; privateKey: string }> {
     return new Promise((resolve, reject) => {
-        generateKeyPair("rsa", {modulusLength: 1024}, (err, publicKey, privateKey) => {
+        generateKeyPair("rsa", {modulusLength: 2048}, (err, publicKey, privateKey) => {
             if (err) {
                 reject(err)
             } else {
