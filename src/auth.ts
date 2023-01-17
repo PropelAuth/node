@@ -467,3 +467,34 @@ async function getTokenVerificationMetadata(
 
     return tokenVerificationMetadata
 }
+
+export type HandleErrorOptions = {
+    logError?: boolean,
+    returnDetailedErrorToUser?: boolean
+}
+
+export type HandleErrorResponse = {
+    status: number,
+    message: string
+}
+
+export function handleError(e: unknown, opts?: HandleErrorOptions): HandleErrorResponse {
+    if (opts && opts.logError) {
+        console.error(e);
+    }
+
+    const detailedError = opts && opts.returnDetailedErrorToUser
+    if (e instanceof UnauthorizedException) {
+        return {
+            status: 401, message: detailedError ? e.message : "Unauthorized"
+        }
+    } else if (e instanceof ForbiddenException) {
+        return {
+            status: 403, message: detailedError ? e.message : "Forbidden"
+        }
+    } else {
+        return {
+            status: 401, message: "Unauthorized"
+        }
+    }
+}
