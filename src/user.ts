@@ -37,13 +37,13 @@ export type UserMetadata = {
 }
 
 export class OrgMemberInfo {
-    public orgId: string
-    public orgName: string
-    public urlSafeOrgName: string
+    public readonly orgId: string
+    public readonly orgName: string
+    public readonly urlSafeOrgName: string
 
-    private userAssignedRole: string
-    private userInheritedRolesPlusCurrentRole: string[]
-    private userPermissions: string[]
+    private readonly userAssignedRole: string
+    private readonly userInheritedRolesPlusCurrentRole: string[]
+    private readonly userPermissions: string[]
 
     constructor(orgId: string, orgName: string, urlSafeOrgName: string, userAssignedRole: string, userInheritedRolesPlusCurrentRole: string[], userPermissions: string[]) {
         this.orgId = orgId
@@ -73,18 +73,17 @@ export class OrgMemberInfo {
         return permissions.every(permission => this.hasPermission(permission))
     }
 
-    // getters for the private fields
-
-    get assignedRole(): string {
+    public get assignedRole(): string {
         return this.userAssignedRole
     }
 
-    get inheritedRolesPlusCurrentRole(): string[] {
-        return this.userInheritedRolesPlusCurrentRole
+    public get permissions(): string[] {
+        return this.userPermissions
     }
 
-    get permissions(): string[] {
-        return this.userPermissions
+    // getters for the private fields
+    get inheritedRolesPlusCurrentRole(): string[] {
+        return this.userInheritedRolesPlusCurrentRole
     }
 }
 
