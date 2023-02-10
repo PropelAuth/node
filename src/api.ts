@@ -132,7 +132,7 @@ export function fetchOrgByQuery(authUrl: URL, apiKey: string, query: OrgQuery): 
         page_number: query.pageNumber,
         order_by: query.orderBy,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/query`, "GET", JSON.stringify(request))
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/query`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("apiKey is incorrect")
