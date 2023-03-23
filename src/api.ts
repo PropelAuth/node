@@ -12,7 +12,7 @@ import {
     ChangeUserRoleInOrgException,
     RemoveUserFromOrgException,
     UpdateOrgException,
-    AccessTokenCreationException
+    AccessTokenCreationException, UserNotFoundException
 } from "./exceptions";
 
 export type TokenVerificationMetadata = {
@@ -496,6 +496,10 @@ export type AccessToken = {
 }
 
 export function createAccessToken(authUrl: URL, apiKey: string, createAccessTokenRequest: CreateAccessTokenRequest): Promise<AccessToken> {
+    if (!isValidId(createAccessTokenRequest.userId)) {
+        throw new UserNotFoundException()
+    }
+
     const request = {
         user_id: createAccessTokenRequest.userId,
         duration_in_minutes: createAccessTokenRequest.durationInMinutes,
@@ -507,7 +511,7 @@ export function createAccessToken(authUrl: URL, apiKey: string, createAccessToke
             } else if (httpResponse.statusCode === 400) {
                 throw new AccessTokenCreationException(httpResponse.response)
             } else if (httpResponse.statusCode === 403) {
-                throw new Error("User not found")
+                throw new UserNotFoundException()
             } else if (httpResponse.statusCode === 404) {
                 throw new Error("Access token creation is not enabled")
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {

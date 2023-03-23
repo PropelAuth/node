@@ -123,3 +123,6 @@ export class UpdateUserMetadataException extends Error {
         this.fieldToErrors = JSON.parse(message);
     }
 }
+
+export class UserNotFoundException extends Error {
+}

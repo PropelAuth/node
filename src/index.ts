@@ -29,6 +29,7 @@ export {
     ForbiddenException,
     MagicLinkCreationException,
     MigrateUserException,
+    UserNotFoundException,
     UnauthorizedException,
     UnexpectedException,
     UpdateUserEmailException,
