@@ -1,16 +1,23 @@
 import jwt, {VerifyOptions} from "jsonwebtoken"
 import {
+    AccessToken,
     addUserToOrg,
     AddUserToOrgRequest,
-    allowOrgToSetupSamlConnection, changeUserRoleInOrg, ChangeUserRoleInOrgRequest,
+    allowOrgToSetupSamlConnection,
+    changeUserRoleInOrg,
+    ChangeUserRoleInOrgRequest,
+    createAccessToken,
+    CreateAccessTokenRequest,
     createMagicLink,
     CreateMagicLinkRequest,
     createOrg,
     CreateOrgRequest,
     createUser,
-    CreateUserRequest, deleteOrg,
+    CreateUserRequest,
+    deleteOrg,
     deleteUser,
-    disableUser, disableUser2fa,
+    disableUser,
+    disableUser2fa,
     disallowOrgToSetupSamlConnection,
     enableUser,
     fetchBatchUserMetadata,
@@ -25,12 +32,17 @@ import {
     migrateUserFromExternalSource,
     MigrateUserFromExternalSourceRequest,
     OrgQuery,
-    OrgQueryResponse, removeUserFromOrg, RemoveUserFromOrgRequest,
-    TokenVerificationMetadata, updateOrg, UpdateOrgRequest,
+    OrgQueryResponse,
+    removeUserFromOrg,
+    RemoveUserFromOrgRequest,
+    TokenVerificationMetadata,
+    updateOrg,
+    UpdateOrgRequest,
     updateUserEmail,
     UpdateUserEmailRequest,
     updateUserMetadata,
-    UpdateUserMetadataRequest, updateUserPassword,
+    UpdateUserMetadataRequest,
+    updateUserPassword,
     UpdateUserPasswordRequest,
     UsersInOrgQuery,
     UsersPagedResponse,
@@ -162,6 +174,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return createMagicLink(authUrl, apiKey, createMagicLinkRequest)
     }
 
+    function createAccessTokenWrapper(createAccessTokenRequest: CreateAccessTokenRequest): Promise<AccessToken> {
+        return createAccessToken(authUrl, apiKey, createAccessTokenRequest)
+    }
+
     function migrateUserFromExternalSourceWrapper(migrateUserFromExternalSourceRequest: MigrateUserFromExternalSourceRequest): Promise<User> {
         return migrateUserFromExternalSource(authUrl, apiKey, migrateUserFromExternalSourceRequest)
     }
@@ -223,6 +239,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         updateUserEmail: updateUserEmailWrapper,
         updateUserPassword: updateUserPasswordWrapper,
         createMagicLink: createMagicLinkWrapper,
+        createAccessToken: createAccessTokenWrapper,
         migrateUserFromExternalSource: migrateUserFromExternalSourceWrapper,
         deleteUser: deleteUserWrapper,
         disableUser: disableUserWrapper,

@@ -72,6 +72,14 @@ export class MagicLinkCreationException extends Error {
     }
 }
 
+export class AccessTokenCreationException extends Error {
+    readonly fieldToErrors: {[fieldName: string]: string[]};
+    constructor(message: string) {
+        super(message);
+        this.fieldToErrors = JSON.parse(message);
+    }
+}
+
 export class UnauthorizedException extends Error {
     readonly message: string;
     readonly status: number;
@@ -114,4 +122,7 @@ export class UpdateUserMetadataException extends Error {
         super(message);
         this.fieldToErrors = JSON.parse(message);
     }
+}
+
+export class UserNotFoundException extends Error {
 }

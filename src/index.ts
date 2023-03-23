@@ -18,14 +18,18 @@ export {
     UpdateUserEmailRequest,
     CreateMagicLinkRequest,
     MagicLink,
+    CreateAccessTokenRequest,
+    AccessToken,
 } from "./api"
 export {
+    AccessTokenCreationException,
     AddUserToOrgException,
     CreateOrgException,
     CreateUserException,
     ForbiddenException,
     MagicLinkCreationException,
     MigrateUserException,
+    UserNotFoundException,
     UnauthorizedException,
     UnexpectedException,
     UpdateUserEmailException,
