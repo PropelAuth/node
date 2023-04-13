@@ -289,6 +289,7 @@ export type UpdateUserMetadataRequest = {
     firstName?: string,
     lastName?: string,
     pictureUrl?: string
+    metadata?: {[key: string]: any}
 }
 
 export function updateUserMetadata(authUrl: URL, apiKey: string, userId: string, updateUserMetadataRequest: UpdateUserMetadataRequest): Promise<boolean> {
@@ -301,6 +302,7 @@ export function updateUserMetadata(authUrl: URL, apiKey: string, userId: string,
         first_name: updateUserMetadataRequest.firstName,
         last_name: updateUserMetadataRequest.lastName,
         picture_url: updateUserMetadataRequest.pictureUrl,
+        metadata: updateUserMetadataRequest.metadata,
     }
     return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}`, "PUT", JSON.stringify(request))
         .then((httpResponse) => {
@@ -678,6 +680,7 @@ export type UpdateOrgRequest = {
     orgId: string
     name?: string
     canSetupSaml?: boolean
+    metadata?: {[key: string]: any}
 }
 
 export function updateOrg(authUrl: URL, apiKey: string, updateOrgRequest: UpdateOrgRequest): Promise<boolean> {
@@ -688,6 +691,7 @@ export function updateOrg(authUrl: URL, apiKey: string, updateOrgRequest: Update
     const request = {
         name: updateOrgRequest.name,
         can_setup_saml: updateOrgRequest.canSetupSaml,
+        metadata: updateOrgRequest.metadata,
     }
     return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${updateOrgRequest.orgId}`, "PUT", JSON.stringify(request))
         .then((httpResponse) => {
@@ -800,6 +804,10 @@ function parseUser(response: string) {
             this.legacyUserId = value
         } else if (key === "org_id_to_org_info") {
             this.orgIdToOrgInfo = value;
+        } else if (key === "impersonated_user_id") {
+            this.impersonatorUserId = value;
+        } else if (key === "metadata") {
+            this.metadata = value;
         } else {
             return value
         }
