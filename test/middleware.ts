@@ -139,7 +139,10 @@ test("toUser converts correctly with orgs", async () => {
     const internalUser: InternalUser = {
         user_id: "cbf064e2-edaa-4d35-b413-a8d857329c12",
         email: "easteregg@propelauth.com",
+        username: "easteregg",
         first_name: "easter",
+        last_name: "egg",
+        metadata: {"userdata_a": "uservalue_a"},
         org_id_to_org_member_info: {
             "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a": {
                 org_id: "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
@@ -174,7 +177,10 @@ test("toUser converts correctly with orgs", async () => {
     const user: User = {
         userId: "cbf064e2-edaa-4d35-b413-a8d857329c12",
         email: "easteregg@propelauth.com",
+        username: "easteregg",
         firstName: "easter",
+        lastName: "egg",
+        metadata: {"userdata_a": "uservalue_a"},
         orgIdToOrgMemberInfo: {
             "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a": new OrgMemberInfo(
                 "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
@@ -214,12 +220,16 @@ test("toUser converts correctly without orgs", async () => {
         user_id: "cbf064e2-edaa-4d35-b413-a8d857329c12",
         email: "easteregg@propelauth.com",
         username: "easteregg",
+        first_name: "easter",
+        last_name: "egg",
         legacy_user_id: "something",
     }
     const user: User = {
         userId: "cbf064e2-edaa-4d35-b413-a8d857329c12",
         email: "easteregg@propelauth.com",
         username: "easteregg",
+        firstName: "easter",
+        lastName: "egg",
         legacyUserId: "something",
     }
     expect(toUser(internalUser)).toEqual(user)
