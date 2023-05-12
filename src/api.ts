@@ -1,5 +1,13 @@
 import {httpRequest} from "./http"
-import {Org, User, UserMetadata} from "./user"
+import {
+    EndUserApiKeyFull,
+    EndUserApiKeyNew,
+    EndUserApiKeyResultPage,
+    EndUserApiKeyValidation,
+    Org,
+    User,
+    UserMetadata
+} from "./user"
 import {
     CreateUserException,
     UpdateUserMetadataException,
@@ -12,7 +20,13 @@ import {
     ChangeUserRoleInOrgException,
     RemoveUserFromOrgException,
     UpdateOrgException,
-    AccessTokenCreationException, UserNotFoundException
+    AccessTokenCreationException,
+    UserNotFoundException,
+    EndUserApiKeyFetchException,
+    EndUserApiKeyCreateException,
+    EndUserApiKeyUpdateException,
+    EndUserApiKeyDeleteException,
+    EndUserApiKeyValidateException
 } from "./exceptions";
 
 export type TokenVerificationMetadata = {
@@ -151,6 +165,10 @@ export function fetchOrgByQuery(authUrl: URL, apiKey: string, query: OrgQuery): 
             return JSON.parse(httpResponse.response, function (key, value) {
                 if (key === "org_id") {
                     this.orgId = value
+                } else if (key === "org_name") {
+                    this.name = value;
+                } else if (key === "max_users") {
+                    this.maxUsers = value;
                 } else if (key === "total_orgs") {
                     this.totalOrgs = value;
                 } else if (key === "current_page") {
@@ -456,6 +474,45 @@ export function updateUserPassword(authUrl: URL, apiKey: string, userId: string,
         })
 }
 
+export function enableUserCanCreateOrgs(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/can_create_orgs/enable`, "PUT")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when enabling canCreateOrgs")
+            }
+
+            return true
+        })
+}
+
+export function disableUserCanCreateOrgs(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/can_create_orgs/disable`, "PUT")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when disabling canCreateOrgs")
+            }
+
+            return true
+        })
+}
+
+
 export type CreateMagicLinkRequest = {
     email: string,
     redirectToUrl?: string,
@@ -680,6 +737,7 @@ export type UpdateOrgRequest = {
     orgId: string
     name?: string
     canSetupSaml?: boolean
+    maxUsers?: number
     metadata?: {[key: string]: any}
 }
 
@@ -692,6 +750,7 @@ export function updateOrg(authUrl: URL, apiKey: string, updateOrgRequest: Update
         name: updateOrgRequest.name,
         can_setup_saml: updateOrgRequest.canSetupSaml,
         metadata: updateOrgRequest.metadata,
+        max_users: updateOrgRequest.maxUsers,
     }
     return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${updateOrgRequest.orgId}`, "PUT", JSON.stringify(request))
         .then((httpResponse) => {
@@ -767,6 +826,167 @@ export function disallowOrgToSetupSamlConnection(authUrl: URL, apiKey: string, o
         })
 }
 
+// functions for managing end user api keys
+
+export function fetchEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKey: string): Promise<EndUserApiKeyFull> {
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/${endUserApiKey}`, "GET")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new EndUserApiKeyFetchException(httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when creating the end user api key")
+            }
+
+            return parseEndUserApiKey(httpResponse.response)
+        })
+}
+
+export type EndUserApiKeysQueryRequest = {
+    orgId?: string
+    userId?: string
+    userEmail?: string
+    pageSize?: number
+    pageNumber?: number
+}
+
+export function fetchCurrentEndUserApiKeys(authUrl: URL, apiKey: string, endUserApiKeyQuery: EndUserApiKeysQueryRequest): Promise<EndUserApiKeyResultPage> {
+    const request = {
+        org_id: endUserApiKeyQuery.orgId,
+        user_id: endUserApiKeyQuery.userId,
+        user_email: endUserApiKeyQuery.userEmail,
+        page_size: endUserApiKeyQuery.pageSize,
+        page_number: endUserApiKeyQuery.pageNumber,
+    }
+    const queryString = formatQueryParameters(request)
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/archived?${queryString}`, "GET")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new EndUserApiKeyFetchException(httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when creating the end user api key")
+            }
+
+            return parseEndUserApiKey(httpResponse.response)
+        })
+}
+
+export function fetchArchivedEndUserApiKeys(authUrl: URL, apiKey: string, endUserApiKeyQuery: EndUserApiKeysQueryRequest): Promise<EndUserApiKeyResultPage> {
+    const request = {
+        org_id: endUserApiKeyQuery.orgId,
+        user_id: endUserApiKeyQuery.userId,
+        user_email: endUserApiKeyQuery.userEmail,
+        page_size: endUserApiKeyQuery.pageSize,
+        page_number: endUserApiKeyQuery.pageNumber,
+    }
+    const queryString = formatQueryParameters(request)
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys?${queryString}`, "GET")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new EndUserApiKeyFetchException(httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when creating the end user api key")
+            }
+
+            return parseEndUserApiKey(httpResponse.response)
+        })
+}
+
+
+export type EndUserApiKeysCreateRequest = {
+    orgId?: string
+    userId?: string
+    expiresAtSeconds?: number
+    metadata?: string
+}
+export function createEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKeyCreate: EndUserApiKeysCreateRequest): Promise<EndUserApiKeyNew> {
+    const request = {
+        org_id: endUserApiKeyCreate.orgId,
+        user_id: endUserApiKeyCreate.userId,
+        expires_at_seconds: endUserApiKeyCreate.expiresAtSeconds,
+        metadata: endUserApiKeyCreate.metadata,
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys`, "POST", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new EndUserApiKeyCreateException(httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when creating the end user api key")
+            }
+
+            return parseEndUserApiKey(httpResponse.response)
+        })
+}
+
+export type EndUserApiKeyUpdateRequest = {
+    expiresAtSeconds?: number
+    metadata?: string
+}
+export function updateEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKey: string, endUserApiKeyUpdate: EndUserApiKeyUpdateRequest): Promise<boolean> {
+    const request = {
+        expires_at_seconds: endUserApiKeyUpdate.expiresAtSeconds,
+        metadata: endUserApiKeyUpdate.metadata,
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/${endUserApiKey}`, "PATCH", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new EndUserApiKeyUpdateException(httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when updating the end user api key")
+            }
+
+            return true
+        })
+}
+
+export function deleteEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKey: string): Promise<boolean> {
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/${endUserApiKey}`, "DELETE")
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new EndUserApiKeyDeleteException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when deleting the end user api key")
+            }
+
+            return true
+        })
+}
+
+export function validateEndUserApiKeys(authUrl: URL, apiKey: string, endUserApiKey: string): Promise<EndUserApiKeyValidation> {
+    const request = {
+        api_key_token: endUserApiKey,
+    }
+
+    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/validate`, "POST", JSON.stringify(request))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("apiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new EndUserApiKeyValidateException(httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when updating the end user api key")
+            }
+
+            return parseEndUserApiKey(httpResponse.response)
+        })
+}
 
 const idRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i;
 
@@ -790,10 +1010,17 @@ function formatIssuer(authUrl: URL): string {
 
 function parseOrg(response: string): Org {
     const jsonParse = JSON.parse(response)
-    return {
+
+    let org: Org = {
         orgId: jsonParse.org_id,
         name: jsonParse.name,
     }
+
+    if (jsonParse.max_users) {
+        org.maxUsers = jsonParse.max_users
+    }
+
+    return org
 }
 
 function parseUser(response: string) {
@@ -852,8 +1079,48 @@ function parseUserMetadataAndOptionalPagingInfo(response: string) {
             this.pageSize = value;
         } else if (key === "has_more_results") {
             this.hasMoreResults = value;
+        } else if (key === "can_create_orgs") {
+            this.canCreateOrgs = value;
         } else if (key === "has_password") {
             this.hasPassword = value;
+        } else {
+            return value
+        }
+    });
+}
+
+function parseEndUserApiKey(response: string) {
+    return JSON.parse(response, function (key, value) {
+        if (key === "api_key_id") {
+            this.apiKeyId = value;
+        } else if (key === "api_key_token") {
+            this.apiKeyToken = value;
+        } else if (key === "created_at") {
+            this.createdAt = value;
+        } else if (key === "expires_at_seconds") {
+            this.expiresAtSeconds = value;
+        } else if (key === "metadata") {
+            this.metadata = value;
+        } else if (key === "user_id") {
+            this.userId = value;
+        } else if (key === "org_id") {
+            this.orgId = value;
+        } else if (key === "api_keys") {
+            this.apiKeys = value;
+        } else if (key === "total_api_keys") {
+            this.totalApiKeys = value;
+        } else if (key === "current_page") {
+            this.currentPage = value;
+        } else if (key === "page_size") {
+            this.pageSize = value;
+        } else if (key === "has_more_results") {
+            this.hasMoreResults = value;
+        } else if (key === "user_metadata") {
+            this.userMetadata = value;
+        } else if (key === "org_metadata") {
+            this.orgMetadata = value;
+        } else if (key === "user_role_in_org") {
+            this.userRoleInOrg = value;
         } else {
             return value
         }

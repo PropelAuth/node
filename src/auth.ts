@@ -8,19 +8,29 @@ import {
     ChangeUserRoleInOrgRequest,
     createAccessToken,
     CreateAccessTokenRequest,
+    createEndUserApiKey,
     createMagicLink,
     CreateMagicLinkRequest,
     createOrg,
     CreateOrgRequest,
     createUser,
     CreateUserRequest,
+    deleteEndUserApiKey,
     deleteOrg,
     deleteUser,
     disableUser,
     disableUser2fa,
+    disableUserCanCreateOrgs,
     disallowOrgToSetupSamlConnection,
     enableUser,
+    enableUserCanCreateOrgs,
+    EndUserApiKeysCreateRequest,
+    EndUserApiKeysQueryRequest,
+    EndUserApiKeyUpdateRequest,
+    fetchArchivedEndUserApiKeys,
     fetchBatchUserMetadata,
+    fetchCurrentEndUserApiKeys,
+    fetchEndUserApiKey,
     fetchOrg,
     fetchOrgByQuery,
     fetchTokenVerificationMetadata,
@@ -36,6 +46,7 @@ import {
     removeUserFromOrg,
     RemoveUserFromOrgRequest,
     TokenVerificationMetadata,
+    updateEndUserApiKey,
     updateOrg,
     UpdateOrgRequest,
     updateUserEmail,
@@ -48,8 +59,11 @@ import {
     UsersPagedResponse,
     UsersQuery,
 } from "./api"
-import {UnauthorizedException, UnexpectedException, ForbiddenException} from "./exceptions"
+import {ForbiddenException, UnauthorizedException, UnexpectedException} from "./exceptions"
 import {
+    EndUserApiKeyFull,
+    EndUserApiKeyNew,
+    EndUserApiKeyResultPage,
     InternalUser,
     Org,
     OrgIdToOrgMemberInfo,
@@ -170,6 +184,14 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return updateUserPassword(authUrl, apiKey, userId, updateUserPasswordRequest)
     }
 
+    function enableUserCanCreateOrgsWrapper(userId: string): Promise<boolean> {
+        return enableUserCanCreateOrgs(authUrl, apiKey, userId)
+    }
+
+    function disableUserCanCreateOrgsWrapper(userId: string): Promise<boolean> {
+        return disableUserCanCreateOrgs(authUrl, apiKey, userId)
+    }
+
     function createMagicLinkWrapper(createMagicLinkRequest: CreateMagicLinkRequest): Promise<MagicLink> {
         return createMagicLink(authUrl, apiKey, createMagicLinkRequest)
     }
@@ -214,6 +236,31 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return disallowOrgToSetupSamlConnection(authUrl, apiKey, orgId)
     }
 
+    // end user api key wrappers
+    function fetchEndUserApiKeyWrapper(endUserApiKey: string): Promise<EndUserApiKeyFull> {
+        return fetchEndUserApiKey(authUrl, apiKey, endUserApiKey)
+    }
+
+    function fetchCurrentEndUserApiKeysWrapper(endUserApiKeyQuery: EndUserApiKeysQueryRequest): Promise<EndUserApiKeyResultPage> {
+        return fetchCurrentEndUserApiKeys(authUrl, apiKey, endUserApiKeyQuery)
+    }
+
+    function fetchArchivedEndUserApiKeysWrapper(endUserApiKeyQuery: EndUserApiKeysQueryRequest): Promise<EndUserApiKeyResultPage> {
+        return fetchArchivedEndUserApiKeys(authUrl, apiKey, endUserApiKeyQuery)
+    }
+
+    function createEndUserApiKeyWrapper(endUserApiKeyCreate: EndUserApiKeysCreateRequest): Promise<EndUserApiKeyNew> {
+        return createEndUserApiKey(authUrl, apiKey, endUserApiKeyCreate)
+    }
+
+    function updateEndUserApiKeyWrapper(endUserApiKey: string, endUserApiKeyUpdate: EndUserApiKeyUpdateRequest): Promise<boolean> {
+        return updateEndUserApiKey(authUrl, apiKey, endUserApiKey, endUserApiKeyUpdate)
+    }
+
+    function deleteEndUserApiKeyWrapper(endUserApiKey: string): Promise<boolean> {
+        return deleteEndUserApiKey(authUrl, apiKey, endUserApiKey)
+    }
+
     return {
         // validate and fetching functions
         validateAccessTokenAndGetUser,
@@ -245,7 +292,8 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         disableUser: disableUserWrapper,
         enableUser: enableUserWrapper,
         disableUser2fa: disableUser2faWrapper,
-
+        enableUserCanCreateOrgs: enableUserCanCreateOrgsWrapper,
+        disableUserCanCreateOrgs: disableUserCanCreateOrgsWrapper,
         // org management functions
         createOrg: createOrgWrapper,
         addUserToOrg: addUserToOrgWrapper,
@@ -255,6 +303,13 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         deleteOrg: deleteOrgWrapper,
         allowOrgToSetupSamlConnection: allowOrgToSetupSamlConnectionWrapper,
         disallowOrgToSetupSamlConnection: disallowOrgToSetupSamlConnectionWrapper,
+        // end user api keys functions
+        fetchEndUserApiKey: fetchEndUserApiKeyWrapper,
+        fetchCurrentEndUserApiKeys: fetchCurrentEndUserApiKeysWrapper,
+        fetchArchivedEndUserApiKeys: fetchArchivedEndUserApiKeysWrapper,
+        createEndUserApiKey: createEndUserApiKeyWrapper,
+        updateEndUserApiKey: updateEndUserApiKeyWrapper,
+        deleteEndUserApiKey: deleteEndUserApiKeyWrapper,
     }
 }
 
