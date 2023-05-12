@@ -58,12 +58,14 @@ import {
     UsersInOrgQuery,
     UsersPagedResponse,
     UsersQuery,
+    validateEndUserApiKey,
 } from "./api"
 import {ForbiddenException, UnauthorizedException, UnexpectedException} from "./exceptions"
 import {
     EndUserApiKeyFull,
     EndUserApiKeyNew,
     EndUserApiKeyResultPage,
+    EndUserApiKeyValidation,
     InternalUser,
     Org,
     OrgIdToOrgMemberInfo,
@@ -261,6 +263,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return deleteEndUserApiKey(authUrl, apiKey, endUserApiKey)
     }
 
+    function validateEndUserApiKeyWrapper(endUserApiKey: string): Promise<EndUserApiKeyValidation> {
+        return validateEndUserApiKey(authUrl, apiKey, endUserApiKey)
+    }
+
     return {
         // validate and fetching functions
         validateAccessTokenAndGetUser,
@@ -310,6 +316,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         createEndUserApiKey: createEndUserApiKeyWrapper,
         updateEndUserApiKey: updateEndUserApiKeyWrapper,
         deleteEndUserApiKey: deleteEndUserApiKeyWrapper,
+        validateEndUserApiKey: validateEndUserApiKeyWrapper,
     }
 }
 

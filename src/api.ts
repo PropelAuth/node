@@ -969,7 +969,7 @@ export function deleteEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKey:
         })
 }
 
-export function validateEndUserApiKeys(authUrl: URL, apiKey: string, endUserApiKey: string): Promise<EndUserApiKeyValidation> {
+export function validateEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKey: string): Promise<EndUserApiKeyValidation> {
     const request = {
         api_key_token: endUserApiKey,
     }
