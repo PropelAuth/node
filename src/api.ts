@@ -1,9 +1,9 @@
 import {httpRequest} from "./http"
 import {
-    EndUserApiKeyFull,
-    EndUserApiKeyNew,
-    EndUserApiKeyResultPage,
-    EndUserApiKeyValidation,
+    ApiKeyFull,
+    ApiKeyNew,
+    ApiKeyResultPage,
+    ApiKeyValidation,
     Org,
     User,
     UserMetadata
@@ -22,11 +22,11 @@ import {
     UpdateOrgException,
     AccessTokenCreationException,
     UserNotFoundException,
-    EndUserApiKeyFetchException,
-    EndUserApiKeyCreateException,
-    EndUserApiKeyUpdateException,
-    EndUserApiKeyDeleteException,
-    EndUserApiKeyValidateException
+    ApiKeyFetchException,
+    ApiKeyCreateException,
+    ApiKeyUpdateException,
+    ApiKeyDeleteException,
+    ApiKeyValidateException
 } from "./exceptions";
 
 export type TokenVerificationMetadata = {
@@ -35,15 +35,15 @@ export type TokenVerificationMetadata = {
 }
 
 export function fetchTokenVerificationMetadata(authUrl: URL,
-                                               apiKey: string,
+                                               integrationApiKey: string,
                                                manualTokenVerificationMetadata?: TokenVerificationMetadata): Promise<TokenVerificationMetadata> {
     if (manualTokenVerificationMetadata) {
         return Promise.resolve(manualTokenVerificationMetadata)
     }
 
-    return httpRequest(authUrl, apiKey, "/api/v1/token_verification_metadata", "GET").then((httpResponse) => {
+    return httpRequest(authUrl, integrationApiKey, "/api/v1/token_verification_metadata", "GET").then((httpResponse) => {
         if (httpResponse.statusCode === 401) {
-            throw new Error("apiKey is incorrect")
+            throw new Error("integrationApiKey is incorrect")
         } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
             throw new Error("Unknown error when fetching token verification metadata")
         }
@@ -56,19 +56,19 @@ export function fetchTokenVerificationMetadata(authUrl: URL,
     })
 }
 
-export function fetchUserMetadataByUserIdWithIdCheck(authUrl: URL, apiKey: string, userId: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
+export function fetchUserMetadataByUserIdWithIdCheck(authUrl: URL, integrationApiKey: string, userId: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
     if (isValidId(userId)) {
-        return fetchUserMetadataByQuery(authUrl, apiKey, userId, {include_orgs: includeOrgs || false})
+        return fetchUserMetadataByQuery(authUrl, integrationApiKey, userId, {include_orgs: includeOrgs || false})
     } else {
         return Promise.resolve(null);
     }
 }
 
-export function fetchUserMetadataByQuery(authUrl: URL, apiKey: string, pathParam: string, query: any): Promise<UserMetadata | null> {
+export function fetchUserMetadataByQuery(authUrl: URL, integrationApiKey: string, pathParam: string, query: any): Promise<UserMetadata | null> {
     const queryString = formatQueryParameters(query)
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${pathParam}?${queryString}`, "GET").then((httpResponse) => {
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${pathParam}?${queryString}`, "GET").then((httpResponse) => {
         if (httpResponse.statusCode === 401) {
-            throw new Error("apiKey is incorrect")
+            throw new Error("integrationApiKey is incorrect")
         } else if (httpResponse.statusCode === 404) {
             return null
         } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -81,7 +81,7 @@ export function fetchUserMetadataByQuery(authUrl: URL, apiKey: string, pathParam
 
 export function fetchBatchUserMetadata(
     authUrl: URL,
-    apiKey: string,
+    integrationApiKey: string,
     type: string,
     values: string[],
     keyFunction: (x: UserMetadata) => string,
@@ -89,10 +89,10 @@ export function fetchBatchUserMetadata(
 ): Promise<{ [key: string]: UserMetadata }> {
     const queryString = includeOrgs ? formatQueryParameters({include_orgs: includeOrgs}) : ""
     const jsonBody = {[type]: values}
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${type}?${queryString}`, "POST", JSON.stringify(jsonBody)).then(
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${type}?${queryString}`, "POST", JSON.stringify(jsonBody)).then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new Error("Bad request " + httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -110,14 +110,14 @@ export function fetchBatchUserMetadata(
     )
 }
 
-export function fetchOrg(authUrl: URL, apiKey: string, orgId: string): Promise<Org | null> {
+export function fetchOrg(authUrl: URL, integrationApiKey: string, orgId: string): Promise<Org | null> {
     if (!isValidId(orgId)) {
         return Promise.resolve(null);
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${orgId}`, "GET").then((httpResponse) => {
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/${orgId}`, "GET").then((httpResponse) => {
         if (httpResponse.statusCode === 401) {
-            throw new Error("apiKey is incorrect")
+            throw new Error("integrationApiKey is incorrect")
         } else if (httpResponse.statusCode === 404) {
             return null
         } else if (httpResponse.statusCode === 426) {
@@ -144,16 +144,16 @@ export type OrgQueryResponse = {
     hasMoreResults: boolean,
 }
 
-export function fetchOrgByQuery(authUrl: URL, apiKey: string, query: OrgQuery): Promise<OrgQueryResponse> {
+export function fetchOrgByQuery(authUrl: URL, integrationApiKey: string, query: OrgQuery): Promise<OrgQueryResponse> {
     const request = {
         page_size: query.pageSize,
         page_number: query.pageNumber,
         order_by: query.orderBy,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/query`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/query`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new Error("Invalid query " + httpResponse.response)
             } else if (httpResponse.statusCode === 426) {
@@ -200,7 +200,7 @@ export type UsersPagedResponse = {
     hasMoreResults: boolean
 }
 
-export function fetchUsersByQuery(authUrl: URL, apiKey: string, query: UsersQuery): Promise<UsersPagedResponse> {
+export function fetchUsersByQuery(authUrl: URL, integrationApiKey: string, query: UsersQuery): Promise<UsersPagedResponse> {
     const queryParams = {
         page_size: query.pageSize,
         page_number: query.pageNumber,
@@ -209,10 +209,10 @@ export function fetchUsersByQuery(authUrl: URL, apiKey: string, query: UsersQuer
         include_orgs: query.includeOrgs,
     }
     const q = formatQueryParameters(queryParams)
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/query?${q}`, "GET")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/query?${q}`, "GET")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new Error("Invalid query " + httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -230,7 +230,7 @@ export type UsersInOrgQuery = {
     includeOrgs?: boolean,
 }
 
-export function fetchUsersInOrg(authUrl: URL, apiKey: string, query: UsersInOrgQuery): Promise<UsersPagedResponse> {
+export function fetchUsersInOrg(authUrl: URL, integrationApiKey: string, query: UsersInOrgQuery): Promise<UsersPagedResponse> {
     if (!isValidId(query.orgId)) {
         const emptyResponse: UsersPagedResponse = {
             users: [],
@@ -248,10 +248,10 @@ export function fetchUsersInOrg(authUrl: URL, apiKey: string, query: UsersInOrgQ
         include_orgs: query.includeOrgs,
     }
     const queryString = formatQueryParameters(queryParams)
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/org/${query.orgId}?${queryString}`, "GET")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/org/${query.orgId}?${queryString}`, "GET")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new Error("Invalid query " + httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -275,7 +275,7 @@ export type CreateUserRequest = {
     lastName?: string,
 }
 
-export function createUser(authUrl: URL, apiKey: string, createUserRequest: CreateUserRequest): Promise<User> {
+export function createUser(authUrl: URL, integrationApiKey: string, createUserRequest: CreateUserRequest): Promise<User> {
     const request = {
         email: createUserRequest.email,
         email_confirmed: createUserRequest.emailConfirmed,
@@ -288,10 +288,10 @@ export function createUser(authUrl: URL, apiKey: string, createUserRequest: Crea
         first_name: createUserRequest.firstName,
         last_name: createUserRequest.lastName,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new CreateUserException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -310,7 +310,7 @@ export type UpdateUserMetadataRequest = {
     metadata?: {[key: string]: any}
 }
 
-export function updateUserMetadata(authUrl: URL, apiKey: string, userId: string, updateUserMetadataRequest: UpdateUserMetadataRequest): Promise<boolean> {
+export function updateUserMetadata(authUrl: URL, integrationApiKey: string, userId: string, updateUserMetadataRequest: UpdateUserMetadataRequest): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
@@ -322,10 +322,10 @@ export function updateUserMetadata(authUrl: URL, apiKey: string, userId: string,
         picture_url: updateUserMetadataRequest.pictureUrl,
         metadata: updateUserMetadataRequest.metadata,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}`, "PUT", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}`, "PUT", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new UpdateUserMetadataException(httpResponse.response)
             } else if (httpResponse.statusCode === 404) {
@@ -338,15 +338,15 @@ export function updateUserMetadata(authUrl: URL, apiKey: string, userId: string,
         })
 }
 
-export function deleteUser(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+export function deleteUser(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}`, "DELETE")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}`, "DELETE")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -357,15 +357,15 @@ export function deleteUser(authUrl: URL, apiKey: string, userId: string): Promis
         })
 }
 
-export function disableUser(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+export function disableUser(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/disable`, "POST")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/disable`, "POST")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -376,15 +376,15 @@ export function disableUser(authUrl: URL, apiKey: string, userId: string): Promi
         })
 }
 
-export function enableUser(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+export function enableUser(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/enable`, "POST")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/enable`, "POST")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -395,15 +395,15 @@ export function enableUser(authUrl: URL, apiKey: string, userId: string): Promis
         })
 }
 
-export function disableUser2fa(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+export function disableUser2fa(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/disable_2fa`, "POST")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/disable_2fa`, "POST")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -419,7 +419,7 @@ export type UpdateUserEmailRequest = {
     requireEmailConfirmation: boolean,
 }
 
-export function updateUserEmail(authUrl: URL, apiKey: string, userId: string, updateUserEmail: UpdateUserEmailRequest): Promise<boolean> {
+export function updateUserEmail(authUrl: URL, integrationApiKey: string, userId: string, updateUserEmail: UpdateUserEmailRequest): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
@@ -428,10 +428,10 @@ export function updateUserEmail(authUrl: URL, apiKey: string, userId: string, up
         new_email: updateUserEmail.newEmail,
         require_email_confirmation: updateUserEmail.requireEmailConfirmation,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/email`, "PUT", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/email`, "PUT", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new UpdateUserEmailException(httpResponse.response)
             } else if (httpResponse.statusCode === 404) {
@@ -449,7 +449,7 @@ export type UpdateUserPasswordRequest = {
     askUserToUpdatePasswordOnLogin?: boolean,
 }
 
-export function updateUserPassword(authUrl: URL, apiKey: string, userId: string, updateUserPasswordRequest: UpdateUserPasswordRequest): Promise<boolean> {
+export function updateUserPassword(authUrl: URL, integrationApiKey: string, userId: string, updateUserPasswordRequest: UpdateUserPasswordRequest): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
@@ -458,10 +458,10 @@ export function updateUserPassword(authUrl: URL, apiKey: string, userId: string,
         password: updateUserPasswordRequest.password,
         ask_user_to_update_password_on_login: updateUserPasswordRequest.askUserToUpdatePasswordOnLogin,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/password`, "PUT", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/password`, "PUT", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new UpdateUserPasswordException(httpResponse.response)
             } else if (httpResponse.statusCode === 404) {
@@ -474,15 +474,15 @@ export function updateUserPassword(authUrl: URL, apiKey: string, userId: string,
         })
 }
 
-export function enableUserCanCreateOrgs(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+export function enableUserCanCreateOrgs(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/can_create_orgs/enable`, "PUT")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/can_create_orgs/enable`, "PUT")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -493,15 +493,15 @@ export function enableUserCanCreateOrgs(authUrl: URL, apiKey: string, userId: st
         })
 }
 
-export function disableUserCanCreateOrgs(authUrl: URL, apiKey: string, userId: string): Promise<boolean> {
+export function disableUserCanCreateOrgs(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/user/${userId}/can_create_orgs/disable`, "PUT")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/can_create_orgs/disable`, "PUT")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -524,17 +524,17 @@ export type MagicLink = {
     url: string
 }
 
-export function createMagicLink(authUrl: URL, apiKey: string, createMagicLinkRequest: CreateMagicLinkRequest): Promise<MagicLink> {
+export function createMagicLink(authUrl: URL, integrationApiKey: string, createMagicLinkRequest: CreateMagicLinkRequest): Promise<MagicLink> {
     const request = {
         email: createMagicLinkRequest.email,
         redirect_to_url: createMagicLinkRequest.redirectToUrl,
         expires_in_hours: createMagicLinkRequest.expiresInHours,
         create_new_user_if_one_doesnt_exist: createMagicLinkRequest.createNewUserIfOneDoesntExist,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/magic_link`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/magic_link`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new MagicLinkCreationException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -554,7 +554,7 @@ export type AccessToken = {
     access_token: string
 }
 
-export function createAccessToken(authUrl: URL, apiKey: string, createAccessTokenRequest: CreateAccessTokenRequest): Promise<AccessToken> {
+export function createAccessToken(authUrl: URL, integrationApiKey: string, createAccessTokenRequest: CreateAccessTokenRequest): Promise<AccessToken> {
     if (!isValidId(createAccessTokenRequest.userId)) {
         throw new UserNotFoundException()
     }
@@ -563,10 +563,10 @@ export function createAccessToken(authUrl: URL, apiKey: string, createAccessToke
         user_id: createAccessTokenRequest.userId,
         duration_in_minutes: createAccessTokenRequest.durationInMinutes,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/access_token`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/access_token`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new AccessTokenCreationException(httpResponse.response)
             } else if (httpResponse.statusCode === 403) {
@@ -598,7 +598,7 @@ export type MigrateUserFromExternalSourceRequest = {
 }
 
 export function migrateUserFromExternalSource(authUrl: URL,
-                                              apiKey: string,
+                                              integrationApiKey: string,
                                               migrateUserFromExternalSourceRequest: MigrateUserFromExternalSourceRequest): Promise<User> {
     const request = {
         email: migrateUserFromExternalSourceRequest.email,
@@ -615,10 +615,10 @@ export function migrateUserFromExternalSource(authUrl: URL,
         last_name: migrateUserFromExternalSourceRequest.lastName,
         username: migrateUserFromExternalSourceRequest.username,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/migrate_user/`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/migrate_user/`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new MigrateUserException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -633,14 +633,14 @@ export type CreateOrgRequest = {
     name: string
 }
 
-export function createOrg(authUrl: URL, apiKey: string, createOrgRequest: CreateOrgRequest): Promise<Org> {
+export function createOrg(authUrl: URL, integrationApiKey: string, createOrgRequest: CreateOrgRequest): Promise<Org> {
     const request = {
         name: createOrgRequest.name,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new CreateOrgException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -657,16 +657,16 @@ export type AddUserToOrgRequest = {
     role: string
 }
 
-export function addUserToOrg(authUrl: URL, apiKey: string, addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
+export function addUserToOrg(authUrl: URL, integrationApiKey: string, addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
     const request = {
         user_id: addUserToOrgRequest.userId,
         org_id: addUserToOrgRequest.orgId,
         role: addUserToOrgRequest.role,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/add_user`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/add_user`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new AddUserToOrgException(httpResponse.response)
             } else if (httpResponse.statusCode === 404) {
@@ -685,16 +685,16 @@ export type ChangeUserRoleInOrgRequest = {
     role: string
 }
 
-export function changeUserRoleInOrg(authUrl: URL, apiKey: string, changeUserRoleInOrgRequest: ChangeUserRoleInOrgRequest): Promise<boolean> {
+export function changeUserRoleInOrg(authUrl: URL, integrationApiKey: string, changeUserRoleInOrgRequest: ChangeUserRoleInOrgRequest): Promise<boolean> {
     const request = {
         user_id: changeUserRoleInOrgRequest.userId,
         org_id: changeUserRoleInOrgRequest.orgId,
         role: changeUserRoleInOrgRequest.role,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/change_role`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/change_role`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new ChangeUserRoleInOrgException(httpResponse.response)
             } else if (httpResponse.statusCode === 404) {
@@ -712,15 +712,15 @@ export type RemoveUserFromOrgRequest = {
     orgId: string
 }
 
-export function removeUserFromOrg(authUrl: URL, apiKey: string, removeUserFromOrgRequest: RemoveUserFromOrgRequest): Promise<boolean> {
+export function removeUserFromOrg(authUrl: URL, integrationApiKey: string, removeUserFromOrgRequest: RemoveUserFromOrgRequest): Promise<boolean> {
     const request = {
         user_id: removeUserFromOrgRequest.userId,
         org_id: removeUserFromOrgRequest.orgId,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/remove_user`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/remove_user`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new RemoveUserFromOrgException(httpResponse.response)
             } else if (httpResponse.statusCode === 404) {
@@ -741,7 +741,7 @@ export type UpdateOrgRequest = {
     metadata?: {[key: string]: any}
 }
 
-export function updateOrg(authUrl: URL, apiKey: string, updateOrgRequest: UpdateOrgRequest): Promise<boolean> {
+export function updateOrg(authUrl: URL, integrationApiKey: string, updateOrgRequest: UpdateOrgRequest): Promise<boolean> {
     if (!isValidId(updateOrgRequest.orgId)) {
         return Promise.resolve(false)
     }
@@ -752,10 +752,10 @@ export function updateOrg(authUrl: URL, apiKey: string, updateOrgRequest: Update
         metadata: updateOrgRequest.metadata,
         max_users: updateOrgRequest.maxUsers,
     }
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${updateOrgRequest.orgId}`, "PUT", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/${updateOrgRequest.orgId}`, "PUT", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new UpdateOrgException(httpResponse.response)
             } else if (httpResponse.statusCode === 404) {
@@ -768,15 +768,15 @@ export function updateOrg(authUrl: URL, apiKey: string, updateOrgRequest: Update
         })
 }
 
-export function deleteOrg(authUrl: URL, apiKey: string, orgId: string): Promise<boolean> {
+export function deleteOrg(authUrl: URL, integrationApiKey: string, orgId: string): Promise<boolean> {
     if (!isValidId(orgId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${orgId}`, "DELETE")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/${orgId}`, "DELETE")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -788,15 +788,15 @@ export function deleteOrg(authUrl: URL, apiKey: string, orgId: string): Promise<
 }
 
 
-export function allowOrgToSetupSamlConnection(authUrl: URL, apiKey: string, orgId: string): Promise<boolean> {
+export function allowOrgToSetupSamlConnection(authUrl: URL, integrationApiKey: string, orgId: string): Promise<boolean> {
     if (!isValidId(orgId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${orgId}/allow_saml`, "POST")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/${orgId}/allow_saml`, "POST")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -807,15 +807,15 @@ export function allowOrgToSetupSamlConnection(authUrl: URL, apiKey: string, orgI
         })
 }
 
-export function disallowOrgToSetupSamlConnection(authUrl: URL, apiKey: string, orgId: string): Promise<boolean> {
+export function disallowOrgToSetupSamlConnection(authUrl: URL, integrationApiKey: string, orgId: string): Promise<boolean> {
     if (!isValidId(orgId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/org/${orgId}/disallow_saml`, "POST")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/${orgId}/disallow_saml`, "POST")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
@@ -828,22 +828,26 @@ export function disallowOrgToSetupSamlConnection(authUrl: URL, apiKey: string, o
 
 // functions for managing end user api keys
 
-export function fetchEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKey: string): Promise<EndUserApiKeyFull> {
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/${endUserApiKey}`, "GET")
+export function fetchApiKey(authUrl: URL, integrationApiKey: string, apiKey: string): Promise<ApiKeyFull> {
+    if (!isValidHex(apiKey)) {
+        throw new ApiKeyFetchException("Invalid api key")
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/${apiKey}`, "GET")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
-                throw new EndUserApiKeyFetchException(httpResponse.response)
+                throw new ApiKeyFetchException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when creating the end user api key")
+                throw new ApiKeyFetchException("Unknown error when creating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
         })
 }
 
-export type EndUserApiKeysQueryRequest = {
+export type ApiKeysQueryRequest = {
     orgId?: string
     userId?: string
     userEmail?: string
@@ -851,48 +855,48 @@ export type EndUserApiKeysQueryRequest = {
     pageNumber?: number
 }
 
-export function fetchCurrentEndUserApiKeys(authUrl: URL, apiKey: string, endUserApiKeyQuery: EndUserApiKeysQueryRequest): Promise<EndUserApiKeyResultPage> {
+export function fetchCurrentApiKeys(authUrl: URL, integrationApiKey: string, apiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
     const request = {
-        org_id: endUserApiKeyQuery.orgId,
-        user_id: endUserApiKeyQuery.userId,
-        user_email: endUserApiKeyQuery.userEmail,
-        page_size: endUserApiKeyQuery.pageSize,
-        page_number: endUserApiKeyQuery.pageNumber,
+        org_id: apiKeyQuery.orgId,
+        user_id: apiKeyQuery.userId,
+        user_email: apiKeyQuery.userEmail,
+        page_size: apiKeyQuery.pageSize,
+        page_number: apiKeyQuery.pageNumber,
     }
     const queryString = formatQueryParameters(request)
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/archived?${queryString}`, "GET")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/archived?${queryString}`, "GET")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
-                throw new EndUserApiKeyFetchException(httpResponse.response)
+                throw new ApiKeyFetchException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when creating the end user api key")
+                throw new ApiKeyFetchException("Unknown error when creating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
         })
 }
 
-export function fetchArchivedEndUserApiKeys(authUrl: URL, apiKey: string, endUserApiKeyQuery: EndUserApiKeysQueryRequest): Promise<EndUserApiKeyResultPage> {
+export function fetchArchivedApiKeys(authUrl: URL, integrationApiKey: string, apiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
     const request = {
-        org_id: endUserApiKeyQuery.orgId,
-        user_id: endUserApiKeyQuery.userId,
-        user_email: endUserApiKeyQuery.userEmail,
-        page_size: endUserApiKeyQuery.pageSize,
-        page_number: endUserApiKeyQuery.pageNumber,
+        org_id: apiKeyQuery.orgId,
+        user_id: apiKeyQuery.userId,
+        user_email: apiKeyQuery.userEmail,
+        page_size: apiKeyQuery.pageSize,
+        page_number: apiKeyQuery.pageNumber,
     }
     const queryString = formatQueryParameters(request)
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys?${queryString}`, "GET")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys?${queryString}`, "GET")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
-                throw new EndUserApiKeyFetchException(httpResponse.response)
+                throw new ApiKeyFetchException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when creating the end user api key")
+                throw new ApiKeyFetchException("Unknown error when creating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
@@ -900,88 +904,100 @@ export function fetchArchivedEndUserApiKeys(authUrl: URL, apiKey: string, endUse
 }
 
 
-export type EndUserApiKeysCreateRequest = {
+export type ApiKeysCreateRequest = {
     orgId?: string
     userId?: string
     expiresAtSeconds?: number
     metadata?: string
 }
-export function createEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKeyCreate: EndUserApiKeysCreateRequest): Promise<EndUserApiKeyNew> {
+export function createApiKey(authUrl: URL, integrationApiKey: string, apiKeyCreate: ApiKeysCreateRequest): Promise<ApiKeyNew> {
     const request = {
-        org_id: endUserApiKeyCreate.orgId,
-        user_id: endUserApiKeyCreate.userId,
-        expires_at_seconds: endUserApiKeyCreate.expiresAtSeconds,
-        metadata: endUserApiKeyCreate.metadata,
+        org_id: apiKeyCreate.orgId,
+        user_id: apiKeyCreate.userId,
+        expires_at_seconds: apiKeyCreate.expiresAtSeconds,
+        metadata: apiKeyCreate.metadata,
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys`, "POST", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
-                throw new EndUserApiKeyCreateException(httpResponse.response)
+                throw new ApiKeyCreateException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when creating the end user api key")
+                throw new ApiKeyCreateException("Unknown error when creating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
         })
 }
 
-export type EndUserApiKeyUpdateRequest = {
+export type ApiKeyUpdateRequest = {
     expiresAtSeconds?: number
     metadata?: string
 }
-export function updateEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKey: string, endUserApiKeyUpdate: EndUserApiKeyUpdateRequest): Promise<boolean> {
-    const request = {
-        expires_at_seconds: endUserApiKeyUpdate.expiresAtSeconds,
-        metadata: endUserApiKeyUpdate.metadata,
+export function updateApiKey(authUrl: URL, integrationApiKey: string, apiKey: string, apiKeyUpdate: ApiKeyUpdateRequest): Promise<boolean> {
+    if (!isValidHex(apiKey)) {
+        throw new ApiKeyUpdateException("Invalid api key")
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/${endUserApiKey}`, "PATCH", JSON.stringify(request))
+    const request = {
+        expires_at_seconds: apiKeyUpdate.expiresAtSeconds,
+        metadata: apiKeyUpdate.metadata,
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/${apiKey}`, "PATCH", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
-                throw new EndUserApiKeyUpdateException(httpResponse.response)
+                throw new ApiKeyUpdateException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when updating the end user api key")
+                throw new ApiKeyUpdateException("Unknown error when updating the end user api key")
             }
 
             return true
         })
 }
 
-export function deleteEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKey: string): Promise<boolean> {
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/${endUserApiKey}`, "DELETE")
+export function deleteApiKey(authUrl: URL, integrationApiKey: string, apiKey: string): Promise<boolean> {
+    if (!isValidHex(apiKey)) {
+        throw new ApiKeyDeleteException("Invalid api key")
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/${apiKey}`, "DELETE")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
-                throw new EndUserApiKeyDeleteException(httpResponse.response)
+                throw new ApiKeyDeleteException(httpResponse.response)
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when deleting the end user api key")
+                throw new ApiKeyDeleteException("Unknown error when deleting the end user api key")
             }
 
             return true
         })
 }
 
-export function validateEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKey: string): Promise<EndUserApiKeyValidation> {
-    const request = {
-        api_key_token: endUserApiKey,
+export function validateApiKey(authUrl: URL, integrationApiKey: string, apiKey: string): Promise<ApiKeyValidation> {
+    if (!isValidHex(apiKey)) {
+        throw new ApiKeyValidateException("Invalid api key")
     }
 
-    return httpRequest(authUrl, apiKey, `/api/backend/v1/end_user_api_keys/validate`, "POST", JSON.stringify(request))
+    const request = {
+        api_key_token: apiKey,
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/validate`, "POST", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
-                throw new Error("apiKey is incorrect")
+                throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
-                throw new EndUserApiKeyValidateException(httpResponse.response)
+                throw new ApiKeyValidateException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when updating the end user api key")
+                throw new ApiKeyValidateException("Unknown error when updating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
@@ -989,10 +1005,17 @@ export function validateEndUserApiKey(authUrl: URL, apiKey: string, endUserApiKe
 }
 
 const idRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i;
+const hexRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i;
 
 function isValidId(id: string): boolean {
     return idRegex.test(id)
 }
+
+
+function isValidHex(id: string): boolean {
+    return hexRegex.test(id)
+}
+
 
 function formatQueryParameters(obj: { [key: string]: any }): string {
     const params = new URLSearchParams();

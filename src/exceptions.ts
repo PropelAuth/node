@@ -127,7 +127,7 @@ export class UpdateUserMetadataException extends Error {
 export class UserNotFoundException extends Error {
 }
 
-export class EndUserApiKeyValidateException extends Error {
+export class ApiKeyValidateException extends Error {
     readonly fieldToErrors: {[fieldName: string]: string[]};
     constructor(message: string) {
         super(message);
@@ -135,7 +135,7 @@ export class EndUserApiKeyValidateException extends Error {
     }
 }
 
-export class EndUserApiKeyDeleteException extends Error {
+export class ApiKeyDeleteException extends Error {
     readonly fieldToErrors: {[fieldName: string]: string[]};
     constructor(message: string) {
         super(message);
@@ -143,7 +143,7 @@ export class EndUserApiKeyDeleteException extends Error {
     }
 }
 
-export class EndUserApiKeyUpdateException extends Error {
+export class ApiKeyUpdateException extends Error {
     readonly fieldToErrors: {[fieldName: string]: string[]};
     constructor(message: string) {
         super(message);
@@ -151,7 +151,7 @@ export class EndUserApiKeyUpdateException extends Error {
     }
 }
 
-export class EndUserApiKeyCreateException extends Error {
+export class ApiKeyCreateException extends Error {
     readonly fieldToErrors: {[fieldName: string]: string[]};
     constructor(message: string) {
         super(message);
@@ -159,7 +159,7 @@ export class EndUserApiKeyCreateException extends Error {
     }
 }
 
-export class EndUserApiKeyFetchException extends Error {
+export class ApiKeyFetchException extends Error {
     readonly fieldToErrors: {[fieldName: string]: string[]};
     constructor(message: string) {
         super(message);

@@ -179,12 +179,12 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
 }
 
 
-export type EndUserApiKeyNew ={
+export type ApiKeyNew ={
     apiKeyId: string
     apiKeyToken: string
 }
 
-export type EndUserApiKeyFull = {
+export type ApiKeyFull = {
     apiKeyId: string
     createdAt: number
     expiresAtSeconds: number
@@ -193,15 +193,15 @@ export type EndUserApiKeyFull = {
     orgId: string
 }
 
-export type EndUserApiKeyResultPage = {
-    apiKeys: EndUserApiKeyFull[]
+export type ApiKeyResultPage = {
+    apiKeys: ApiKeyFull[]
     totalApiKeys: number
     currentPage: number
     pageSize: number
     hasMoreResults: boolean
 }
 
-export type EndUserApiKeyValidation = {
+export type ApiKeyValidation = {
     metadata?: {[key: string]: any}
     userMetadata?: {[key: string]: any}
     orgMetadata?: {[key: string]: any}
