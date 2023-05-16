@@ -239,32 +239,32 @@ export function initBaseAuth(opts: BaseAuthOptions) {
     }
 
     // end user api key wrappers
-    function fetchApiKeyWrapper(ApiKey: string): Promise<ApiKeyFull> {
-        return fetchApiKey(authUrl, integrationApiKey, ApiKey)
+    function fetchApiKeyWrapper(apiKeyId: string): Promise<ApiKeyFull> {
+        return fetchApiKey(authUrl, integrationApiKey, apiKeyId)
     }
 
-    function fetchCurrentApiKeysWrapper(ApiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
-        return fetchCurrentApiKeys(authUrl, integrationApiKey, ApiKeyQuery)
+    function fetchCurrentApiKeysWrapper(apiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
+        return fetchCurrentApiKeys(authUrl, integrationApiKey, apiKeyQuery)
     }
 
-    function fetchArchivedApiKeysWrapper(ApiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
-        return fetchArchivedApiKeys(authUrl, integrationApiKey, ApiKeyQuery)
+    function fetchArchivedApiKeysWrapper(apiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
+        return fetchArchivedApiKeys(authUrl, integrationApiKey, apiKeyQuery)
     }
 
-    function createApiKeyWrapper(ApiKeyCreate: ApiKeysCreateRequest): Promise<ApiKeyNew> {
-        return createApiKey(authUrl, integrationApiKey, ApiKeyCreate)
+    function createApiKeyWrapper(apiKeyCreate: ApiKeysCreateRequest): Promise<ApiKeyNew> {
+        return createApiKey(authUrl, integrationApiKey, apiKeyCreate)
     }
 
-    function updateApiKeyWrapper(ApiKey: string, ApiKeyUpdate: ApiKeyUpdateRequest): Promise<boolean> {
-        return updateApiKey(authUrl, integrationApiKey, ApiKey, ApiKeyUpdate)
+    function updateApiKeyWrapper(apiKeyId: string, ApiKeyUpdate: ApiKeyUpdateRequest): Promise<boolean> {
+        return updateApiKey(authUrl, integrationApiKey, apiKeyId, ApiKeyUpdate)
     }
 
-    function deleteApiKeyWrapper(ApiKey: string): Promise<boolean> {
-        return deleteApiKey(authUrl, integrationApiKey, ApiKey)
+    function deleteApiKeyWrapper(apiKeyId: string): Promise<boolean> {
+        return deleteApiKey(authUrl, integrationApiKey, apiKeyId)
     }
 
-    function validateApiKeyWrapper(ApiKey: string): Promise<ApiKeyValidation> {
-        return validateApiKey(authUrl, integrationApiKey, ApiKey)
+    function validateApiKeyWrapper(apiKeyId: string): Promise<ApiKeyValidation> {
+        return validateApiKey(authUrl, integrationApiKey, apiKeyId)
     }
 
     return {
