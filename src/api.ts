@@ -828,19 +828,19 @@ export function disallowOrgToSetupSamlConnection(authUrl: URL, integrationApiKey
 
 // functions for managing end user api keys
 
-export function fetchApiKey(authUrl: URL, integrationApiKey: string, apiKey: string): Promise<ApiKeyFull> {
-    if (!isValidHex(apiKey)) {
+export function fetchApiKey(authUrl: URL, integrationApiKey: string, apiKeyId: string): Promise<ApiKeyFull> {
+    if (!isValidHex(apiKeyId)) {
         throw new ApiKeyFetchException("Invalid api key")
     }
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/${apiKey}`, "GET")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/${apiKeyId}`, "GET")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new ApiKeyFetchException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new ApiKeyFetchException("Unknown error when creating the end user api key")
+                throw new Error("Unknown error when creating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
@@ -865,14 +865,14 @@ export function fetchCurrentApiKeys(authUrl: URL, integrationApiKey: string, api
     }
     const queryString = formatQueryParameters(request)
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/archived?${queryString}`, "GET")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys?${queryString}`, "GET")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new ApiKeyFetchException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new ApiKeyFetchException("Unknown error when creating the end user api key")
+                throw new Error("Unknown error when creating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
@@ -889,14 +889,14 @@ export function fetchArchivedApiKeys(authUrl: URL, integrationApiKey: string, ap
     }
     const queryString = formatQueryParameters(request)
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys?${queryString}`, "GET")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/archived?${queryString}`, "GET")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new ApiKeyFetchException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new ApiKeyFetchException("Unknown error when creating the end user api key")
+                throw new Error("Unknown error when creating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
@@ -908,7 +908,7 @@ export type ApiKeysCreateRequest = {
     orgId?: string
     userId?: string
     expiresAtSeconds?: number
-    metadata?: string
+    metadata?: object
 }
 export function createApiKey(authUrl: URL, integrationApiKey: string, apiKeyCreate: ApiKeysCreateRequest): Promise<ApiKeyNew> {
     const request = {
@@ -925,7 +925,7 @@ export function createApiKey(authUrl: URL, integrationApiKey: string, apiKeyCrea
             } else if (httpResponse.statusCode === 400) {
                 throw new ApiKeyCreateException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new ApiKeyCreateException("Unknown error when creating the end user api key")
+                throw new Error("Unknown error when creating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
@@ -936,8 +936,8 @@ export type ApiKeyUpdateRequest = {
     expiresAtSeconds?: number
     metadata?: string
 }
-export function updateApiKey(authUrl: URL, integrationApiKey: string, apiKey: string, apiKeyUpdate: ApiKeyUpdateRequest): Promise<boolean> {
-    if (!isValidHex(apiKey)) {
+export function updateApiKey(authUrl: URL, integrationApiKey: string, apiKeyId: string, apiKeyUpdate: ApiKeyUpdateRequest): Promise<boolean> {
+    if (!isValidHex(apiKeyId)) {
         throw new ApiKeyUpdateException("Invalid api key")
     }
 
@@ -946,26 +946,26 @@ export function updateApiKey(authUrl: URL, integrationApiKey: string, apiKey: st
         metadata: apiKeyUpdate.metadata,
     }
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/${apiKey}`, "PATCH", JSON.stringify(request))
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/${apiKeyId}`, "PATCH", JSON.stringify(request))
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
             } else if (httpResponse.statusCode === 400) {
                 throw new ApiKeyUpdateException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new ApiKeyUpdateException("Unknown error when updating the end user api key")
+                throw new Error("Unknown error when updating the end user api key")
             }
 
             return true
         })
 }
 
-export function deleteApiKey(authUrl: URL, integrationApiKey: string, apiKey: string): Promise<boolean> {
-    if (!isValidHex(apiKey)) {
+export function deleteApiKey(authUrl: URL, integrationApiKey: string, apiKeyId: string): Promise<boolean> {
+    if (!isValidHex(apiKeyId)) {
         throw new ApiKeyDeleteException("Invalid api key")
     }
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/${apiKey}`, "DELETE")
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/${apiKeyId}`, "DELETE")
         .then((httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
@@ -974,20 +974,20 @@ export function deleteApiKey(authUrl: URL, integrationApiKey: string, apiKey: st
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new ApiKeyDeleteException("Unknown error when deleting the end user api key")
+                throw new Error("Unknown error when deleting the end user api key")
             }
 
             return true
         })
 }
 
-export function validateApiKey(authUrl: URL, integrationApiKey: string, apiKey: string): Promise<ApiKeyValidation> {
-    if (!isValidHex(apiKey)) {
+export function validateApiKey(authUrl: URL, integrationApiKey: string, apiKeyId: string): Promise<ApiKeyValidation> {
+    if (!isValidHex(apiKeyId)) {
         throw new ApiKeyValidateException("Invalid api key")
     }
 
     const request = {
-        api_key_token: apiKey,
+        api_key_token: apiKeyId,
     }
 
     return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/validate`, "POST", JSON.stringify(request))
@@ -997,7 +997,7 @@ export function validateApiKey(authUrl: URL, integrationApiKey: string, apiKey: 
             } else if (httpResponse.statusCode === 400) {
                 throw new ApiKeyValidateException(httpResponse.response)
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new ApiKeyValidateException("Unknown error when updating the end user api key")
+                throw new Error("Unknown error when updating the end user api key")
             }
 
             return parseEndUserApiKey(httpResponse.response)
@@ -1005,7 +1005,7 @@ export function validateApiKey(authUrl: URL, integrationApiKey: string, apiKey: 
 }
 
 const idRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i;
-const hexRegex = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/i;
+const hexRegex = /^[0-9a-fA-F]{32}$/i;
 
 function isValidId(id: string): boolean {
     return idRegex.test(id)
