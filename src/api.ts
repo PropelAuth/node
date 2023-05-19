@@ -981,13 +981,9 @@ export function deleteApiKey(authUrl: URL, integrationApiKey: string, apiKeyId: 
         })
 }
 
-export function validateApiKey(authUrl: URL, integrationApiKey: string, apiKeyId: string): Promise<ApiKeyValidation> {
-    if (!isValidHex(apiKeyId)) {
-        throw new ApiKeyValidateException("Invalid api key")
-    }
-
+export function validateApiKey(authUrl: URL, integrationApiKey: string, apiKeyToken: string): Promise<ApiKeyValidation> {
     const request = {
-        api_key_token: apiKeyId,
+        api_key_token: apiKeyToken,
     }
 
     return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/end_user_api_keys/validate`, "POST", JSON.stringify(request))
