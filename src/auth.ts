@@ -8,19 +8,29 @@ import {
     ChangeUserRoleInOrgRequest,
     createAccessToken,
     CreateAccessTokenRequest,
+    createApiKey,
     createMagicLink,
     CreateMagicLinkRequest,
     createOrg,
     CreateOrgRequest,
     createUser,
     CreateUserRequest,
+    deleteApiKey,
     deleteOrg,
     deleteUser,
     disableUser,
     disableUser2fa,
+    disableUserCanCreateOrgs,
     disallowOrgToSetupSamlConnection,
     enableUser,
+    enableUserCanCreateOrgs,
+    ApiKeysCreateRequest,
+    ApiKeysQueryRequest,
+    ApiKeyUpdateRequest,
+    fetchArchivedApiKeys,
     fetchBatchUserMetadata,
+    fetchCurrentApiKeys,
+    fetchApiKey,
     fetchOrg,
     fetchOrgByQuery,
     fetchTokenVerificationMetadata,
@@ -36,6 +46,7 @@ import {
     removeUserFromOrg,
     RemoveUserFromOrgRequest,
     TokenVerificationMetadata,
+    updateApiKey,
     updateOrg,
     UpdateOrgRequest,
     updateUserEmail,
@@ -47,9 +58,14 @@ import {
     UsersInOrgQuery,
     UsersPagedResponse,
     UsersQuery,
+    validateApiKey,
 } from "./api"
-import {UnauthorizedException, UnexpectedException, ForbiddenException} from "./exceptions"
+import {ForbiddenException, UnauthorizedException, UnexpectedException} from "./exceptions"
 import {
+    ApiKeyFull,
+    ApiKeyNew,
+    ApiKeyResultPage,
+    ApiKeyValidation,
     InternalUser,
     Org,
     OrgIdToOrgMemberInfo,
@@ -81,9 +97,9 @@ export type BaseAuthOptions = {
 
 export function initBaseAuth(opts: BaseAuthOptions) {
     const authUrl: URL = validateAuthUrl(opts.authUrl)
-    const apiKey: string = opts.apiKey
+    const integrationApiKey: string = opts.apiKey
     const tokenVerificationMetadataPromise = fetchTokenVerificationMetadata(
-        authUrl, apiKey, opts.manualTokenVerificationMetadata
+        authUrl, integrationApiKey, opts.manualTokenVerificationMetadata
     ).catch((err) => {
         console.error("Error initializing auth library. ", err)
     })
@@ -96,122 +112,159 @@ export function initBaseAuth(opts: BaseAuthOptions) {
     const validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions = wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(tokenVerificationMetadataPromise)
 
     function fetchUserMetadataByUserId(userId: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
-        return fetchUserMetadataByUserIdWithIdCheck(authUrl, apiKey, userId, includeOrgs);
+        return fetchUserMetadataByUserIdWithIdCheck(authUrl, integrationApiKey, userId, includeOrgs);
     }
 
     function fetchUserMetadataByEmail(email: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
-        return fetchUserMetadataByQuery(authUrl, apiKey, "email", {email: email, include_orgs: includeOrgs || false})
+        return fetchUserMetadataByQuery(authUrl, integrationApiKey, "email", {email: email, include_orgs: includeOrgs || false})
     }
 
     function fetchUserMetadataByUsername(username: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
-        return fetchUserMetadataByQuery(authUrl, apiKey, "username", {
+        return fetchUserMetadataByQuery(authUrl, integrationApiKey, "username", {
             username: username,
             include_orgs: includeOrgs || false
         })
     }
 
     function fetchBatchUserMetadataByUserIds(userIds: string[], includeOrgs?: boolean): Promise<{ [userId: string]: UserMetadata }> {
-        return fetchBatchUserMetadata(authUrl, apiKey, "user_ids", userIds, (x) => x.userId, includeOrgs || false)
+        return fetchBatchUserMetadata(authUrl, integrationApiKey, "user_ids", userIds, (x) => x.userId, includeOrgs || false)
     }
 
     function fetchBatchUserMetadataByEmails(emails: string[], includeOrgs?: boolean): Promise<{ [email: string]: UserMetadata }> {
-        return fetchBatchUserMetadata(authUrl, apiKey, "emails", emails, (x) => x.email, includeOrgs || false)
+        return fetchBatchUserMetadata(authUrl, integrationApiKey, "emails", emails, (x) => x.email, includeOrgs || false)
     }
 
     function fetchBatchUserMetadataByUsernames(usernames: string[], includeOrgs?: boolean): Promise<{ [username: string]: UserMetadata }> {
-        return fetchBatchUserMetadata(authUrl, apiKey, "usernames", usernames, (x) => x.username || "", includeOrgs || false)
+        return fetchBatchUserMetadata(authUrl, integrationApiKey, "usernames", usernames, (x) => x.username || "", includeOrgs || false)
     }
 
     function fetchOrgWrapper(orgId: string): Promise<Org | null> {
-        return fetchOrg(authUrl, apiKey, orgId)
+        return fetchOrg(authUrl, integrationApiKey, orgId)
     }
 
     function fetchOrgsByQueryWrapper(orgQuery: OrgQuery): Promise<OrgQueryResponse> {
-        return fetchOrgByQuery(authUrl, apiKey, orgQuery)
+        return fetchOrgByQuery(authUrl, integrationApiKey, orgQuery)
     }
 
     function fetchUsersByQueryWrapper(usersQuery: UsersQuery): Promise<UsersPagedResponse> {
-        return fetchUsersByQuery(authUrl, apiKey, usersQuery)
+        return fetchUsersByQuery(authUrl, integrationApiKey, usersQuery)
     }
 
     function fetchUsersInOrgWrapper(usersInOrgQuery: UsersInOrgQuery): Promise<UsersPagedResponse> {
-        return fetchUsersInOrg(authUrl, apiKey, usersInOrgQuery)
+        return fetchUsersInOrg(authUrl, integrationApiKey, usersInOrgQuery)
     }
 
     function createUserWrapper(createUserRequest: CreateUserRequest): Promise<User> {
-        return createUser(authUrl, apiKey, createUserRequest)
+        return createUser(authUrl, integrationApiKey, createUserRequest)
     }
 
     function updateUserMetadataWrapper(userId: string, updateUserMetadataRequest: UpdateUserMetadataRequest): Promise<boolean> {
-        return updateUserMetadata(authUrl, apiKey, userId, updateUserMetadataRequest)
+        return updateUserMetadata(authUrl, integrationApiKey, userId, updateUserMetadataRequest)
     }
 
     function deleteUserWrapper(userId: string): Promise<boolean> {
-        return deleteUser(authUrl, apiKey, userId)
+        return deleteUser(authUrl, integrationApiKey, userId)
     }
 
     function disableUserWrapper(userId: string): Promise<boolean> {
-        return disableUser(authUrl, apiKey, userId)
+        return disableUser(authUrl, integrationApiKey, userId)
     }
 
     function enableUserWrapper(userId: string): Promise<boolean> {
-        return enableUser(authUrl, apiKey, userId)
+        return enableUser(authUrl, integrationApiKey, userId)
     }
 
     function disableUser2faWrapper(userId: string): Promise<boolean> {
-        return disableUser2fa(authUrl, apiKey, userId)
+        return disableUser2fa(authUrl, integrationApiKey, userId)
     }
 
     function updateUserEmailWrapper(userId: string, updateUserEmailRequest: UpdateUserEmailRequest): Promise<boolean> {
-        return updateUserEmail(authUrl, apiKey, userId, updateUserEmailRequest)
+        return updateUserEmail(authUrl, integrationApiKey, userId, updateUserEmailRequest)
     }
 
     function updateUserPasswordWrapper(userId: string, updateUserPasswordRequest: UpdateUserPasswordRequest): Promise<boolean> {
-        return updateUserPassword(authUrl, apiKey, userId, updateUserPasswordRequest)
+        return updateUserPassword(authUrl, integrationApiKey, userId, updateUserPasswordRequest)
+    }
+
+    function enableUserCanCreateOrgsWrapper(userId: string): Promise<boolean> {
+        return enableUserCanCreateOrgs(authUrl, integrationApiKey, userId)
+    }
+
+    function disableUserCanCreateOrgsWrapper(userId: string): Promise<boolean> {
+        return disableUserCanCreateOrgs(authUrl, integrationApiKey, userId)
     }
 
     function createMagicLinkWrapper(createMagicLinkRequest: CreateMagicLinkRequest): Promise<MagicLink> {
-        return createMagicLink(authUrl, apiKey, createMagicLinkRequest)
+        return createMagicLink(authUrl, integrationApiKey, createMagicLinkRequest)
     }
 
     function createAccessTokenWrapper(createAccessTokenRequest: CreateAccessTokenRequest): Promise<AccessToken> {
-        return createAccessToken(authUrl, apiKey, createAccessTokenRequest)
+        return createAccessToken(authUrl, integrationApiKey, createAccessTokenRequest)
     }
 
     function migrateUserFromExternalSourceWrapper(migrateUserFromExternalSourceRequest: MigrateUserFromExternalSourceRequest): Promise<User> {
-        return migrateUserFromExternalSource(authUrl, apiKey, migrateUserFromExternalSourceRequest)
+        return migrateUserFromExternalSource(authUrl, integrationApiKey, migrateUserFromExternalSourceRequest)
     }
 
     function createOrgWrapper(createOrgRequest: CreateOrgRequest): Promise<Org> {
-        return createOrg(authUrl, apiKey, createOrgRequest)
+        return createOrg(authUrl, integrationApiKey, createOrgRequest)
     }
 
     function addUserToOrgWrapper(addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
-        return addUserToOrg(authUrl, apiKey, addUserToOrgRequest)
+        return addUserToOrg(authUrl, integrationApiKey, addUserToOrgRequest)
     }
 
     function changeUserRoleInOrgWrapper(changeUserRoleInOrgRequest: ChangeUserRoleInOrgRequest): Promise<boolean> {
-        return changeUserRoleInOrg(authUrl, apiKey, changeUserRoleInOrgRequest)
+        return changeUserRoleInOrg(authUrl, integrationApiKey, changeUserRoleInOrgRequest)
     }
 
     function removeUserFromOrgWrapper(removeUserFromOrgRequest: RemoveUserFromOrgRequest): Promise<boolean> {
-        return removeUserFromOrg(authUrl, apiKey, removeUserFromOrgRequest)
+        return removeUserFromOrg(authUrl, integrationApiKey, removeUserFromOrgRequest)
     }
 
     function updateOrgWrapper(updateOrgRequest: UpdateOrgRequest): Promise<boolean> {
-        return updateOrg(authUrl, apiKey, updateOrgRequest)
+        return updateOrg(authUrl, integrationApiKey, updateOrgRequest)
     }
 
     function deleteOrgWrapper(orgId: string): Promise<boolean> {
-        return deleteOrg(authUrl, apiKey, orgId)
+        return deleteOrg(authUrl, integrationApiKey, orgId)
     }
 
     function allowOrgToSetupSamlConnectionWrapper(orgId: string): Promise<boolean> {
-        return allowOrgToSetupSamlConnection(authUrl, apiKey, orgId)
+        return allowOrgToSetupSamlConnection(authUrl, integrationApiKey, orgId)
     }
 
     function disallowOrgToSetupSamlConnectionWrapper(orgId: string): Promise<boolean> {
-        return disallowOrgToSetupSamlConnection(authUrl, apiKey, orgId)
+        return disallowOrgToSetupSamlConnection(authUrl, integrationApiKey, orgId)
+    }
+
+    // end user api key wrappers
+    function fetchApiKeyWrapper(apiKeyId: string): Promise<ApiKeyFull> {
+        return fetchApiKey(authUrl, integrationApiKey, apiKeyId)
+    }
+
+    function fetchCurrentApiKeysWrapper(apiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
+        return fetchCurrentApiKeys(authUrl, integrationApiKey, apiKeyQuery)
+    }
+
+    function fetchArchivedApiKeysWrapper(apiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
+        return fetchArchivedApiKeys(authUrl, integrationApiKey, apiKeyQuery)
+    }
+
+    function createApiKeyWrapper(apiKeyCreate: ApiKeysCreateRequest): Promise<ApiKeyNew> {
+        return createApiKey(authUrl, integrationApiKey, apiKeyCreate)
+    }
+
+    function updateApiKeyWrapper(apiKeyId: string, ApiKeyUpdate: ApiKeyUpdateRequest): Promise<boolean> {
+        return updateApiKey(authUrl, integrationApiKey, apiKeyId, ApiKeyUpdate)
+    }
+
+    function deleteApiKeyWrapper(apiKeyId: string): Promise<boolean> {
+        return deleteApiKey(authUrl, integrationApiKey, apiKeyId)
+    }
+
+    function validateApiKeyWrapper(apiKeyToken: string): Promise<ApiKeyValidation> {
+        return validateApiKey(authUrl, integrationApiKey, apiKeyToken)
     }
 
     return {
@@ -245,7 +298,8 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         disableUser: disableUserWrapper,
         enableUser: enableUserWrapper,
         disableUser2fa: disableUser2faWrapper,
-
+        enableUserCanCreateOrgs: enableUserCanCreateOrgsWrapper,
+        disableUserCanCreateOrgs: disableUserCanCreateOrgsWrapper,
         // org management functions
         createOrg: createOrgWrapper,
         addUserToOrg: addUserToOrgWrapper,
@@ -255,6 +309,14 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         deleteOrg: deleteOrgWrapper,
         allowOrgToSetupSamlConnection: allowOrgToSetupSamlConnectionWrapper,
         disallowOrgToSetupSamlConnection: disallowOrgToSetupSamlConnectionWrapper,
+        // api keys functions
+        fetchApiKey: fetchApiKeyWrapper,
+        fetchCurrentApiKeys: fetchCurrentApiKeysWrapper,
+        fetchArchivedApiKeys: fetchArchivedApiKeysWrapper,
+        createApiKey: createApiKeyWrapper,
+        updateApiKey: updateApiKeyWrapper,
+        deleteApiKey: deleteApiKeyWrapper,
+        validateApiKey: validateApiKeyWrapper,
     }
 }
 
