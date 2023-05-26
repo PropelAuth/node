@@ -22,6 +22,11 @@ export {
     AccessToken,
 } from "./api"
 export {
+    ApiKeyValidateException,
+    ApiKeyDeleteException,
+    ApiKeyUpdateException,
+    ApiKeyCreateException,
+    ApiKeyFetchException,
     AccessTokenCreationException,
     AddUserToOrgException,
     CreateOrgException,

@@ -203,7 +203,19 @@ export type ApiKeyResultPage = {
 
 export type ApiKeyValidation = {
     metadata?: {[key: string]: any}
-    userMetadata?: {[key: string]: any}
-    orgMetadata?: {[key: string]: any}
-    userRoleInOrg?: string
+    user?: UserMetadata,
+    org?: Org,
+    userInOrg?: OrgMemberInfo
+}
+
+export type PersonalApiKeyValidation = {
+    metadata?: {[key: string]: any}
+    user?: UserMetadata,
+}
+
+export type OrgApiKeyValidation = {
+    metadata?: {[key: string]: any}
+    org: Org,
+    user?: UserMetadata,
+    userInOrg?: OrgMemberInfo
 }
