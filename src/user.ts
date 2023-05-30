@@ -210,7 +210,7 @@ export type ApiKeyValidation = {
 
 export type PersonalApiKeyValidation = {
     metadata?: {[key: string]: any}
-    user?: UserMetadata,
+    user: UserMetadata,
 }
 
 export type OrgApiKeyValidation = {
