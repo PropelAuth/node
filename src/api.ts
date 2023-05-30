@@ -4,29 +4,31 @@ import {
     ApiKeyNew,
     ApiKeyResultPage,
     ApiKeyValidation,
-    Org, OrgApiKeyValidation, PersonalApiKeyValidation,
+    Org,
+    OrgApiKeyValidation,
+    PersonalApiKeyValidation,
     User,
     UserMetadata
 } from "./user"
 import {
+    AccessTokenCreationException,
+    AddUserToOrgException,
+    ApiKeyCreateException,
+    ApiKeyDeleteException,
+    ApiKeyFetchException,
+    ApiKeyUpdateException,
+    ApiKeyValidateException,
+    ChangeUserRoleInOrgException,
+    CreateOrgException,
     CreateUserException,
-    UpdateUserMetadataException,
-    UpdateUserEmailException,
     MagicLinkCreationException,
     MigrateUserException,
-    CreateOrgException,
-    AddUserToOrgException,
-    UpdateUserPasswordException,
-    ChangeUserRoleInOrgException,
     RemoveUserFromOrgException,
     UpdateOrgException,
-    AccessTokenCreationException,
-    UserNotFoundException,
-    ApiKeyFetchException,
-    ApiKeyCreateException,
-    ApiKeyUpdateException,
-    ApiKeyDeleteException,
-    ApiKeyValidateException, UnauthorizedException
+    UpdateUserEmailException,
+    UpdateUserMetadataException,
+    UpdateUserPasswordException,
+    UserNotFoundException
 } from "./exceptions";
 
 export type TokenVerificationMetadata = {

@@ -58,7 +58,9 @@ import {
     UsersInOrgQuery,
     UsersPagedResponse,
     UsersQuery,
-    validateApiKey, validateOrgApiKey, validatePersonalApiKey,
+    validateApiKey,
+    validateOrgApiKey,
+    validatePersonalApiKey,
 } from "./api"
 import {ForbiddenException, UnauthorizedException, UnexpectedException} from "./exceptions"
 import {
@@ -67,9 +69,11 @@ import {
     ApiKeyResultPage,
     ApiKeyValidation,
     InternalUser,
-    Org, OrgApiKeyValidation,
+    Org,
+    OrgApiKeyValidation,
     OrgIdToOrgMemberInfo,
-    OrgMemberInfo, PersonalApiKeyValidation,
+    OrgMemberInfo,
+    PersonalApiKeyValidation,
     toUser,
     User,
     UserAndOrgMemberInfo,
