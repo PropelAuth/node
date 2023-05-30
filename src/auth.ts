@@ -4,6 +4,9 @@ import {
     addUserToOrg,
     AddUserToOrgRequest,
     allowOrgToSetupSamlConnection,
+    ApiKeysCreateRequest,
+    ApiKeysQueryRequest,
+    ApiKeyUpdateRequest,
     changeUserRoleInOrg,
     ChangeUserRoleInOrgRequest,
     createAccessToken,
@@ -24,13 +27,10 @@ import {
     disallowOrgToSetupSamlConnection,
     enableUser,
     enableUserCanCreateOrgs,
-    ApiKeysCreateRequest,
-    ApiKeysQueryRequest,
-    ApiKeyUpdateRequest,
+    fetchApiKey,
     fetchArchivedApiKeys,
     fetchBatchUserMetadata,
     fetchCurrentApiKeys,
-    fetchApiKey,
     fetchOrg,
     fetchOrgByQuery,
     fetchTokenVerificationMetadata,
@@ -59,6 +59,8 @@ import {
     UsersPagedResponse,
     UsersQuery,
     validateApiKey,
+    validateOrgApiKey,
+    validatePersonalApiKey,
 } from "./api"
 import {ForbiddenException, UnauthorizedException, UnexpectedException} from "./exceptions"
 import {
@@ -68,8 +70,10 @@ import {
     ApiKeyValidation,
     InternalUser,
     Org,
+    OrgApiKeyValidation,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
+    PersonalApiKeyValidation,
     toUser,
     User,
     UserAndOrgMemberInfo,
@@ -263,6 +267,14 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return deleteApiKey(authUrl, integrationApiKey, apiKeyId)
     }
 
+    function validatePersonalApiKeyWrapper(apiKeyToken: string): Promise<PersonalApiKeyValidation> {
+        return validatePersonalApiKey(authUrl, integrationApiKey, apiKeyToken)
+    }
+
+    function validateOrgApiKeyWrapper(apiKeyToken: string): Promise<OrgApiKeyValidation> {
+        return validateOrgApiKey(authUrl, integrationApiKey, apiKeyToken)
+    }
+
     function validateApiKeyWrapper(apiKeyToken: string): Promise<ApiKeyValidation> {
         return validateApiKey(authUrl, integrationApiKey, apiKeyToken)
     }
@@ -317,6 +329,8 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         updateApiKey: updateApiKeyWrapper,
         deleteApiKey: deleteApiKeyWrapper,
         validateApiKey: validateApiKeyWrapper,
+        validatePersonalApiKey: validatePersonalApiKeyWrapper,
+        validateOrgApiKey: validateOrgApiKeyWrapper,
     }
 }
 
