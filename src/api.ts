@@ -6,6 +6,7 @@ import {
     ApiKeyValidation,
     Org,
     OrgApiKeyValidation,
+    OrgMemberInfo,
     PersonalApiKeyValidation,
     User,
     UserMetadata
@@ -1065,18 +1066,56 @@ function formatIssuer(authUrl: URL): string {
     return authUrl.origin
 }
 
-function parseSnakeCaseToCamelCase(response: string) {
-    return JSON.parse(response, function (key, value) {
-        // some keys we rename for consistency
-        if (key === "user_role") {
-            this.userAssignedRole = value;
-        } else if (key === "inherited_user_roles_plus_current_role") {
-            this.userRoles = value;
-        } else {
-            const camelCaseKey = camelCase(key)
-            this[camelCaseKey] = value
+export function parseSnakeCaseToCamelCase(response: string) {
+    let parsedObject = JSON.parse(response);
+    return processKeys(parsedObject);
+}
+
+const keysForValueNotToModify = ["metadata", "org_metadata"];
+
+function isOrgMemberInfo(value: any) {
+    return value &&
+        typeof value === "object" &&
+        value.hasOwnProperty("orgId") &&
+        value.hasOwnProperty("orgName") &&
+        value.hasOwnProperty("urlSafeOrgName") &&
+        value.hasOwnProperty("orgMetadata") &&
+        value.hasOwnProperty("userAssignedRole") &&
+        value.hasOwnProperty("userRoles") &&
+        value.hasOwnProperty("userPermissions")
+}
+
+function processKeys(obj: any): any {
+    let newObj: any = Array.isArray(obj) ? [] : {};
+    for (let key in obj) {
+        if (!obj.hasOwnProperty(key)) {
+            continue
         }
-    })
+
+        let value = obj[key];
+        const doNotModifyValue = keysForValueNotToModify.includes(key)
+        if (!doNotModifyValue && value && typeof value === "object") {
+            value = processKeys(value);
+        }
+
+        if (isOrgMemberInfo(value)) {
+            value = new OrgMemberInfo(
+                value["orgId"], value["orgName"], value["orgMetadata"], value["urlSafeOrgName"],
+                value["userAssignedRole"], value["userRoles"], value["userPermissions"])
+        }
+
+        let newKey;
+        if (key === "user_role") {
+            newKey = "userAssignedRole";
+        } else if (key === "inherited_user_roles_plus_current_role") {
+            newKey = "userRoles";
+        } else {
+            newKey = camelCase(key);
+        }
+
+        newObj[newKey] = value;
+    }
+    return newObj;
 }
 
 function camelCase(key: string): string {
