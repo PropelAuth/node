@@ -18,6 +18,7 @@ export type User = {
 export type Org = {
     orgId: string,
     name: string,
+    maxUsers?: number,
 }
 
 export type UserMetadata = {
@@ -34,6 +35,7 @@ export type UserMetadata = {
     locked: boolean,
     enabled: boolean,
     mfaEnabled: boolean,
+    canCreateOrgs: boolean,
 
     createdAt: number,
     lastActiveAt: number,
@@ -174,4 +176,46 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
     }
 
     return camelCase
+}
+
+
+export type ApiKeyNew ={
+    apiKeyId: string
+    apiKeyToken: string
+}
+
+export type ApiKeyFull = {
+    apiKeyId: string
+    createdAt: number
+    expiresAtSeconds: number
+    metadata: {[key: string]: any}
+    userId: string
+    orgId: string
+}
+
+export type ApiKeyResultPage = {
+    apiKeys: ApiKeyFull[]
+    totalApiKeys: number
+    currentPage: number
+    pageSize: number
+    hasMoreResults: boolean
+}
+
+export type ApiKeyValidation = {
+    metadata?: {[key: string]: any}
+    user?: UserMetadata,
+    org?: Org,
+    userInOrg?: OrgMemberInfo
+}
+
+export type PersonalApiKeyValidation = {
+    metadata?: {[key: string]: any}
+    user: UserMetadata,
+}
+
+export type OrgApiKeyValidation = {
+    metadata?: {[key: string]: any}
+    org: Org,
+    user?: UserMetadata,
+    userInOrg?: OrgMemberInfo
 }
