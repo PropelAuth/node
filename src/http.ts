@@ -12,9 +12,11 @@ export function httpRequest(
     method: string,
     body?: string
 ): Promise<HttpResponse> {
+    let userAgent = `propelauth-node/${process.env.npm_package_version} node/${process.version} ${process.platform}/${process.arch}`
     let headers: any = {
         Authorization: "Bearer " + apiKey,
         "Content-Type": "application/json",
+        "User-Agent": userAgent,
     }
     if (body !== undefined) {
         headers["Content-Length"] = Buffer.byteLength(body)
