@@ -13,6 +13,7 @@ export type User = {
     legacyUserId?: string
     impersonatorUserId?: string
     metadata?: {[key: string]: any}
+    properties?: {[key: string]: unknown}
 }
 
 export type Org = {
@@ -47,6 +48,7 @@ export type UserMetadata = {
     legacyUserId?: string
     impersonatorUserId?: string
     metadata?: {[key: string]: any}
+    properties?: {[key: string]: unknown}
 }
 
 export class OrgMemberInfo {
@@ -136,6 +138,7 @@ export type InternalUser = {
     legacy_user_id?: string
     impersonator_user_id?: string
     metadata?: {[key: string]: any}
+    properties?: {[key: string]: unknown}
 }
 
 export function toUser(snake_case: InternalUser): User {
@@ -149,6 +152,7 @@ export function toUser(snake_case: InternalUser): User {
         legacyUserId: snake_case.legacy_user_id,
         impersonatorUserId: snake_case.impersonator_user_id,
         metadata: snake_case.metadata,
+        properties: snake_case.properties,
     }
 }
 
