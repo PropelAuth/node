@@ -38,6 +38,8 @@ import {
     fetchUserMetadataByUserIdWithIdCheck,
     fetchUsersByQuery,
     fetchUsersInOrg,
+    inviteUserToOrg,
+    InviteUserToOrgRequest,
     MagicLink,
     migrateUserFromExternalSource,
     MigrateUserFromExternalSourceRequest,
@@ -242,6 +244,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return disallowOrgToSetupSamlConnection(authUrl, integrationApiKey, orgId)
     }
 
+    function inviteUserToOrgWrapper(inviteUserToOrgRequest: InviteUserToOrgRequest): Promise<boolean> {
+        return inviteUserToOrg(authUrl, integrationApiKey, inviteUserToOrgRequest)
+    }
+
     // end user api key wrappers
     function fetchApiKeyWrapper(apiKeyId: string): Promise<ApiKeyFull> {
         return fetchApiKey(authUrl, integrationApiKey, apiKeyId)
@@ -321,6 +327,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         deleteOrg: deleteOrgWrapper,
         allowOrgToSetupSamlConnection: allowOrgToSetupSamlConnectionWrapper,
         disallowOrgToSetupSamlConnection: disallowOrgToSetupSamlConnectionWrapper,
+        inviteUserToOrg: inviteUserToOrgWrapper,
         // api keys functions
         fetchApiKey: fetchApiKeyWrapper,
         fetchCurrentApiKeys: fetchCurrentApiKeysWrapper,

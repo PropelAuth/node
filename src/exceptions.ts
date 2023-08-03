@@ -166,3 +166,11 @@ export class ApiKeyFetchException extends Error {
         this.fieldToErrors = JSON.parse(message);
     }
 }
+
+export class BadRequestException extends Error {
+    readonly fieldToErrors: {[fieldName: string]: string[]};
+    constructor(message: string) {
+        super(message);
+        this.fieldToErrors = JSON.parse(message);
+    }
+}

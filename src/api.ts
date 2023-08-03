@@ -19,6 +19,7 @@ import {
     ApiKeyFetchException,
     ApiKeyUpdateException,
     ApiKeyValidateException,
+    BadRequestException,
     ChangeUserRoleInOrgException,
     CreateOrgException,
     CreateUserException,
@@ -829,6 +830,35 @@ export function disallowOrgToSetupSamlConnection(authUrl: URL, integrationApiKey
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
                 throw new Error("Unknown error when disallowing org to setup SAML connection")
+            }
+
+            return true
+        })
+}
+
+export type InviteUserToOrgRequest = {
+    orgId: string
+    email: string
+    role: string
+}
+
+export function inviteUserToOrg(authUrl: URL, integrationApiKey: string, inviteUserToOrgRequest: InviteUserToOrgRequest): Promise<boolean> {
+    const body = {
+        org_id: inviteUserToOrgRequest.orgId,
+        email: inviteUserToOrgRequest.email,
+        role: inviteUserToOrgRequest.role,
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/invite_user`, "POST", JSON.stringify(body))
+        .then((httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new BadRequestException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when inviting a user to the org")
             }
 
             return true
