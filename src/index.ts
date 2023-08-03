@@ -20,6 +20,7 @@ export {
     MagicLink,
     CreateAccessTokenRequest,
     AccessToken,
+    InviteUserToOrgRequest
 } from "./api"
 export {
     ApiKeyValidateException,
@@ -29,6 +30,7 @@ export {
     ApiKeyFetchException,
     AccessTokenCreationException,
     AddUserToOrgException,
+    BadRequestException,
     CreateOrgException,
     CreateUserException,
     ForbiddenException,
