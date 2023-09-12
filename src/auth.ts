@@ -69,7 +69,7 @@ import {
     ApiKeyFull,
     ApiKeyNew,
     ApiKeyResultPage,
-    ApiKeyValidation,
+    ApiKeyValidation, CreatedOrg,
     InternalUser,
     Org,
     OrgApiKeyValidation,
@@ -212,7 +212,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return migrateUserFromExternalSource(authUrl, integrationApiKey, migrateUserFromExternalSourceRequest)
     }
 
-    function createOrgWrapper(createOrgRequest: CreateOrgRequest): Promise<Org> {
+    function createOrgWrapper(createOrgRequest: CreateOrgRequest): Promise<CreatedOrg> {
         return createOrg(authUrl, integrationApiKey, createOrgRequest)
     }
 

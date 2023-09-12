@@ -45,6 +45,7 @@ export {
 export {
     User,
     Org,
+    CreatedOrg,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
     toUser,
