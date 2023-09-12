@@ -20,6 +20,13 @@ export type Org = {
     orgId: string,
     name: string,
     maxUsers?: number,
+    isSamlConfigured: boolean,
+    metadata: {[key: string]: any},
+}
+
+export type CreatedOrg = {
+    orgId: string,
+    name: string,
 }
 
 export type UserMetadata = {
@@ -27,6 +34,7 @@ export type UserMetadata = {
 
     email: string
     emailConfirmed: boolean,
+    hasPassword: boolean,
 
     username?: string
     firstName?: string,

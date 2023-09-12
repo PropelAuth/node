@@ -4,6 +4,7 @@ import {
     ApiKeyNew,
     ApiKeyResultPage,
     ApiKeyValidation,
+    CreatedOrg,
     Org,
     OrgApiKeyValidation,
     OrgMemberInfo,
@@ -643,7 +644,7 @@ export type CreateOrgRequest = {
     name: string
 }
 
-export function createOrg(authUrl: URL, integrationApiKey: string, createOrgRequest: CreateOrgRequest): Promise<Org> {
+export function createOrg(authUrl: URL, integrationApiKey: string, createOrgRequest: CreateOrgRequest): Promise<CreatedOrg> {
     const request = {
         name: createOrgRequest.name,
     }
