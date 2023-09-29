@@ -1,6 +1,8 @@
 import { MagicLinkCreationException } from "../exceptions"
 import { httpRequest } from "../http"
 
+const ENDPOINT_PATH = "/api/backend/v1/magic_link"
+
 export type CreateMagicLinkRequest = {
     email: string
     redirectToUrl?: string
@@ -12,6 +14,7 @@ export type MagicLink = {
     url: string
 }
 
+// POST
 export function createMagicLink(
     authUrl: URL,
     integrationApiKey: string,
@@ -23,7 +26,7 @@ export function createMagicLink(
         expires_in_hours: createMagicLinkRequest.expiresInHours,
         create_new_user_if_one_doesnt_exist: createMagicLinkRequest.createNewUserIfOneDoesntExist,
     }
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/magic_link`, "POST", JSON.stringify(request)).then(
+    return httpRequest(authUrl, integrationApiKey, ENDPOINT_PATH, "POST", JSON.stringify(request)).then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
