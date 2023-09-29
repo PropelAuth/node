@@ -1,10 +1,5 @@
 import jwt, { VerifyOptions } from "jsonwebtoken"
-import {
-    migrateUserFromExternalSource,
-    MigrateUserFromExternalSourceRequest,
-    validateOrgApiKey,
-    validatePersonalApiKey,
-} from "./api"
+import { validateOrgApiKey, validatePersonalApiKey } from "./api"
 import { AccessToken, createAccessToken, CreateAccessTokenRequest } from "./api/accessToken"
 import {
     ApiKeysCreateRequest,
@@ -19,6 +14,7 @@ import {
     validateApiKey,
 } from "./api/endUserApiKeys"
 import { createMagicLink, CreateMagicLinkRequest, MagicLink } from "./api/magicLink"
+import { migrateUserFromExternalSource, MigrateUserFromExternalSourceRequest } from "./api/migrateUser"
 import {
     addUserToOrg,
     AddUserToOrgRequest,
