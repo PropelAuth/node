@@ -3,9 +3,6 @@ import {
     AccessToken,
     createAccessToken,
     CreateAccessTokenRequest,
-    createMagicLink,
-    CreateMagicLinkRequest,
-    MagicLink,
     migrateUserFromExternalSource,
     MigrateUserFromExternalSourceRequest,
     validateOrgApiKey,
@@ -23,6 +20,7 @@ import {
     updateApiKey,
     validateApiKey,
 } from "./api/endUserApiKeys"
+import { createMagicLink, CreateMagicLinkRequest, MagicLink } from "./api/magicLink"
 import {
     addUserToOrg,
     AddUserToOrgRequest,
