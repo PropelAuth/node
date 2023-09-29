@@ -35,6 +35,7 @@ import {
 } from "./api/org"
 import { fetchTokenVerificationMetadata, TokenVerificationMetadata } from "./api/tokenVerificationMetadata"
 import {
+    clearUserPassword,
     createUser,
     CreateUserRequest,
     deleteUser,
@@ -202,6 +203,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return createUser(authUrl, integrationApiKey, createUserRequest)
     }
 
+    function clearUserPasswordWrapper(userId: string): Promise<boolean> {
+        return clearUserPassword(authUrl, integrationApiKey, userId)
+    }
+
     function updateUserMetadataWrapper(
         userId: string,
         updateUserMetadataRequest: UpdateUserMetadataRequest
@@ -352,6 +357,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         fetchUsersInOrg: fetchUsersInOrgWrapper,
         // user management functions
         createUser: createUserWrapper,
+        clearUserPassword: clearUserPasswordWrapper,
         updateUserMetadata: updateUserMetadataWrapper,
         updateUserEmail: updateUserEmailWrapper,
         updateUserPassword: updateUserPasswordWrapper,
