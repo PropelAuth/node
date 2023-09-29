@@ -78,8 +78,7 @@ import {
     UserAndOrgMemberInfo,
     UserMetadata,
 } from "./user"
-import { validateOrgApiKey, validatePersonalApiKey } from "./utils"
-import { validateAuthUrl } from "./validators"
+import { validateAuthUrl, validateOrgApiKey, validatePersonalApiKey } from "./validators"
 
 export type BaseAuthOptions = {
     authUrl: string
