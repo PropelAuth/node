@@ -94,6 +94,18 @@ export function fetchOrgByQuery(authUrl: URL, integrationApiKey: string, query: 
 
 export type CreateOrgRequest = {
     name: string
+    domain?: string
+    enableAutoJoiningByDomain?: boolean
+    memebersMustHaveMatchingDomain?: boolean
+    maxUsers?: number
+}
+
+type CreateOrgApiRequest = {
+    name: string
+    domain?: string
+    enable_auto_joining_by_domain?: boolean
+    memebers_must_have_matching_domain?: boolean
+    max_users?: number
 }
 
 export function createOrg(
@@ -101,8 +113,23 @@ export function createOrg(
     integrationApiKey: string,
     createOrgRequest: CreateOrgRequest
 ): Promise<CreatedOrg> {
-    const request = {
-        name: createOrgRequest.name,
+    const {
+        name,
+        domain,
+        enableAutoJoiningByDomain = false,
+        memebersMustHaveMatchingDomain = false,
+        maxUsers,
+    } = createOrgRequest
+    const request: CreateOrgApiRequest = {
+        name,
+        enable_auto_joining_by_domain: enableAutoJoiningByDomain,
+        memebers_must_have_matching_domain: memebersMustHaveMatchingDomain,
+    }
+    if (domain) {
+        request["domain"] = domain
+    }
+    if (maxUsers) {
+        request["max_users"] = maxUsers
     }
     return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/`, "POST", JSON.stringify(request)).then(
         (httpResponse) => {
