@@ -3,6 +3,9 @@ import { httpRequest } from "../http"
 import { User } from "../user"
 import { parseSnakeCaseToCamelCase } from "../utils"
 
+const ENDPOINT_PATH = "/api/backend/v1/migrate_user"
+
+// POST
 export type MigrateUserFromExternalSourceRequest = {
     email: string
     emailConfirmed: boolean
@@ -41,21 +44,17 @@ export function migrateUserFromExternalSource(
         username: migrateUserFromExternalSourceRequest.username,
         properties: migrateUserFromExternalSourceRequest.properties,
     }
-    return httpRequest(
-        authUrl,
-        integrationApiKey,
-        `/api/backend/v1/migrate_user/`,
-        "POST",
-        JSON.stringify(request)
-    ).then((httpResponse) => {
-        if (httpResponse.statusCode === 401) {
-            throw new Error("integrationApiKey is incorrect")
-        } else if (httpResponse.statusCode === 400) {
-            throw new MigrateUserException(httpResponse.response)
-        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-            throw new Error("Unknown error when migrating user")
-        }
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}`, "POST", JSON.stringify(request)).then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new MigrateUserException(httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when migrating user")
+            }
 
-        return parseSnakeCaseToCamelCase(httpResponse.response)
-    })
+            return parseSnakeCaseToCamelCase(httpResponse.response)
+        }
+    )
 }
