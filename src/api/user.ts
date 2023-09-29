@@ -472,6 +472,25 @@ export function disableUserCanCreateOrgs(authUrl: URL, integrationApiKey: string
     )
 }
 
+export async function clearUserPassword(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    const httpResponse = await httpRequest(
+        authUrl,
+        integrationApiKey,
+        `${ENDPOINT_PATH}/${userId}/clear_password`,
+        "PUT"
+    )
+    if (httpResponse.statusCode === 401) {
+        throw new Error("integrationApiKey is incorrect")
+    } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+        throw new Error("Unknown error when clearing password")
+    }
+    return true
+}
+
 // DELETE
 export function deleteUser(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
     if (!isValidId(userId)) {
