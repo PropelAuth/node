@@ -1,4 +1,3 @@
-import { formatQueryParameters, isValidId, parseSnakeCaseToCamelCase } from "../api"
 import {
     BadRequestException,
     CreateUserException,
@@ -8,6 +7,7 @@ import {
 } from "../exceptions"
 import { httpRequest } from "../http"
 import { User, UserMetadata } from "../user"
+import { formatQueryParameters, isValidId, parseSnakeCaseToCamelCase } from "../utils"
 
 export function fetchUserMetadataByUserIdWithIdCheck(
     authUrl: URL,

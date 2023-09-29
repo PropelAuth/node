@@ -1,4 +1,3 @@
-import { formatQueryParameters, isValidHex, parseSnakeCaseToCamelCase, removeBearerIfExists } from "../api"
 import {
     ApiKeyCreateException,
     ApiKeyDeleteException,
@@ -8,6 +7,7 @@ import {
 } from "../exceptions"
 import { httpRequest } from "../http"
 import { ApiKeyFull, ApiKeyNew, ApiKeyResultPage, ApiKeyValidation } from "../user"
+import { formatQueryParameters, isValidHex, parseSnakeCaseToCamelCase, removeBearerIfExists } from "../utils"
 
 export function fetchApiKey(authUrl: URL, integrationApiKey: string, apiKeyId: string): Promise<ApiKeyFull> {
     if (!isValidHex(apiKeyId)) {

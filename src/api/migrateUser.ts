@@ -1,7 +1,7 @@
-import { parseSnakeCaseToCamelCase } from "../api"
 import { MigrateUserException } from "../exceptions"
 import { httpRequest } from "../http"
 import { User } from "../user"
+import { parseSnakeCaseToCamelCase } from "../utils"
 
 export type MigrateUserFromExternalSourceRequest = {
     email: string

@@ -1,57 +1,54 @@
+export { AccessToken, CreateAccessTokenRequest } from "./api/accessToken"
+export { CreateMagicLinkRequest, MagicLink } from "./api/magicLink"
+export { OrgQuery, OrgQueryResponse } from "./api/org"
+export { TokenVerificationMetadata } from "./api/tokenVerificationMetadata"
 export {
-    initBaseAuth,
-    BaseAuthOptions,
-    RequiredOrgInfo as RequriedOrgInfo,
-    handleError,
-    HandleErrorResponse,
-    HandleErrorOptions
-} from "./auth"
-export {
-    TokenVerificationMetadata,
-    OrgQueryResponse,
-    OrgQuery,
-    UsersQuery,
+    CreateUserRequest,
+    InviteUserToOrgRequest,
+    UpdateUserEmailRequest,
+    UpdateUserMetadataRequest,
     UsersInOrgQuery,
     UsersPagedResponse,
-    CreateUserRequest,
-    UpdateUserMetadataRequest,
-    UpdateUserEmailRequest,
-    CreateMagicLinkRequest,
-    MagicLink,
-    CreateAccessTokenRequest,
-    AccessToken,
-    InviteUserToOrgRequest
-} from "./api"
+    UsersQuery,
+} from "./api/user"
 export {
-    ApiKeyValidateException,
-    ApiKeyDeleteException,
-    ApiKeyUpdateException,
-    ApiKeyCreateException,
-    ApiKeyFetchException,
+    BaseAuthOptions,
+    handleError,
+    HandleErrorOptions,
+    HandleErrorResponse,
+    initBaseAuth,
+    RequiredOrgInfo as RequriedOrgInfo,
+} from "./auth"
+export {
     AccessTokenCreationException,
     AddUserToOrgException,
+    ApiKeyCreateException,
+    ApiKeyDeleteException,
+    ApiKeyFetchException,
+    ApiKeyUpdateException,
+    ApiKeyValidateException,
     BadRequestException,
     CreateOrgException,
     CreateUserException,
     ForbiddenException,
     MagicLinkCreationException,
     MigrateUserException,
-    UserNotFoundException,
     UnauthorizedException,
     UnexpectedException,
     UpdateUserEmailException,
-    UpdateUserMetadataException
+    UpdateUserMetadataException,
+    UserNotFoundException,
 } from "./exceptions"
 export {
-    User,
-    Org,
     CreatedOrg,
+    InternalOrgMemberInfo,
+    InternalUser,
+    Org,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
-    toUser,
-    InternalOrgMemberInfo,
-    UserAndOrgMemberInfo,
-    InternalUser,
     toOrgIdToOrgMemberInfo,
+    toUser,
+    User,
+    UserAndOrgMemberInfo,
     UserMetadata,
 } from "./user"

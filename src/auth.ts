@@ -1,5 +1,4 @@
 import jwt, { VerifyOptions } from "jsonwebtoken"
-import { validateOrgApiKey, validatePersonalApiKey } from "./api"
 import { AccessToken, createAccessToken, CreateAccessTokenRequest } from "./api/accessToken"
 import {
     ApiKeysCreateRequest,
@@ -79,6 +78,7 @@ import {
     UserAndOrgMemberInfo,
     UserMetadata,
 } from "./user"
+import { validateOrgApiKey, validatePersonalApiKey } from "./utils"
 import { validateAuthUrl } from "./validators"
 
 export type BaseAuthOptions = {

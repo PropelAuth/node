@@ -1,6 +1,6 @@
-import { isValidId } from "../api"
 import { AccessTokenCreationException, UserNotFoundException } from "../exceptions"
 import { httpRequest } from "../http"
+import { isValidId } from "../utils"
 
 export type CreateAccessTokenRequest = {
     userId: string

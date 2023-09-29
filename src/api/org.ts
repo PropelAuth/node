@@ -1,4 +1,3 @@
-import { isValidId, parseSnakeCaseToCamelCase } from "../api"
 import {
     AddUserToOrgException,
     ChangeUserRoleInOrgException,
@@ -8,6 +7,7 @@ import {
 } from "../exceptions"
 import { httpRequest } from "../http"
 import { CreatedOrg, Org } from "../user"
+import { isValidId, parseSnakeCaseToCamelCase } from "../utils"
 
 export function fetchOrg(authUrl: URL, integrationApiKey: string, orgId: string): Promise<Org | null> {
     if (!isValidId(orgId)) {
