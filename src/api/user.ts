@@ -9,101 +9,7 @@ import { httpRequest } from "../http"
 import { User, UserMetadata } from "../user"
 import { formatQueryParameters, isValidId, parseSnakeCaseToCamelCase } from "../utils"
 
-export function fetchUserMetadataByUserIdWithIdCheck(
-    authUrl: URL,
-    integrationApiKey: string,
-    userId: string,
-    includeOrgs?: boolean
-): Promise<UserMetadata | null> {
-    if (isValidId(userId)) {
-        return fetchUserMetadataByQuery(authUrl, integrationApiKey, userId, { include_orgs: includeOrgs || false })
-    } else {
-        return Promise.resolve(null)
-    }
-}
-
-export function fetchUserMetadataByQuery(
-    authUrl: URL,
-    integrationApiKey: string,
-    pathParam: string,
-    query: any
-): Promise<UserMetadata | null> {
-    const queryString = formatQueryParameters(query)
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${pathParam}?${queryString}`, "GET").then(
-        (httpResponse) => {
-            if (httpResponse.statusCode === 401) {
-                throw new Error("integrationApiKey is incorrect")
-            } else if (httpResponse.statusCode === 404) {
-                return null
-            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when fetching user metadata")
-            }
-
-            return parseSnakeCaseToCamelCase(httpResponse.response)
-        }
-    )
-}
-
-export function fetchBatchUserMetadata(
-    authUrl: URL,
-    integrationApiKey: string,
-    type: string,
-    values: string[],
-    keyFunction: (x: UserMetadata) => string,
-    includeOrgs?: boolean
-): Promise<{ [key: string]: UserMetadata }> {
-    const queryString = includeOrgs ? formatQueryParameters({ include_orgs: includeOrgs }) : ""
-    const jsonBody = { [type]: values }
-    return httpRequest(
-        authUrl,
-        integrationApiKey,
-        `/api/backend/v1/user/${type}?${queryString}`,
-        "POST",
-        JSON.stringify(jsonBody)
-    ).then((httpResponse) => {
-        if (httpResponse.statusCode === 401) {
-            throw new Error("integrationApiKey is incorrect")
-        } else if (httpResponse.statusCode === 400) {
-            throw new Error("Bad request " + httpResponse.response)
-        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-            throw new Error("Unknown error when fetching batch user metadata")
-        }
-
-        const userMetadatas = parseSnakeCaseToCamelCase(httpResponse.response)
-
-        const returnValue: { [key: string]: UserMetadata } = {}
-        for (let userMetadata of userMetadatas) {
-            returnValue[keyFunction(userMetadata)] = userMetadata
-        }
-        return returnValue
-    })
-}
-
-export function fetchUsersByQuery(
-    authUrl: URL,
-    integrationApiKey: string,
-    query: UsersQuery
-): Promise<UsersPagedResponse> {
-    const queryParams = {
-        page_size: query.pageSize,
-        page_number: query.pageNumber,
-        order_by: query.orderBy,
-        email_or_username: query.emailOrUsername,
-        include_orgs: query.includeOrgs,
-    }
-    const q = formatQueryParameters(queryParams)
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/query?${q}`, "GET").then((httpResponse) => {
-        if (httpResponse.statusCode === 401) {
-            throw new Error("integrationApiKey is incorrect")
-        } else if (httpResponse.statusCode === 400) {
-            throw new Error("Invalid query " + httpResponse.response)
-        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-            throw new Error("Unknown error when fetching users by query")
-        }
-
-        return parseSnakeCaseToCamelCase(httpResponse.response)
-    })
-}
+const ENDPOINT_PATH = "/api/backend/v1/user"
 
 export type UsersQuery = {
     pageSize?: number
@@ -128,6 +34,68 @@ export type UsersInOrgQuery = {
     includeOrgs?: boolean
 }
 
+// GET
+export function fetchUserMetadataByQuery(
+    authUrl: URL,
+    integrationApiKey: string,
+    pathParam: string,
+    query: any
+): Promise<UserMetadata | null> {
+    const queryString = formatQueryParameters(query)
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${pathParam}?${queryString}`, "GET").then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return null
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when fetching user metadata")
+            }
+
+            return parseSnakeCaseToCamelCase(httpResponse.response)
+        }
+    )
+}
+
+export function fetchUserMetadataByUserIdWithIdCheck(
+    authUrl: URL,
+    integrationApiKey: string,
+    userId: string,
+    includeOrgs?: boolean
+): Promise<UserMetadata | null> {
+    if (isValidId(userId)) {
+        return fetchUserMetadataByQuery(authUrl, integrationApiKey, userId, { include_orgs: includeOrgs || false })
+    } else {
+        return Promise.resolve(null)
+    }
+}
+
+export function fetchUsersByQuery(
+    authUrl: URL,
+    integrationApiKey: string,
+    query: UsersQuery
+): Promise<UsersPagedResponse> {
+    const queryParams = {
+        page_size: query.pageSize,
+        page_number: query.pageNumber,
+        order_by: query.orderBy,
+        email_or_username: query.emailOrUsername,
+        include_orgs: query.includeOrgs,
+    }
+    const q = formatQueryParameters(queryParams)
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/query?${q}`, "GET").then((httpResponse) => {
+        if (httpResponse.statusCode === 401) {
+            throw new Error("integrationApiKey is incorrect")
+        } else if (httpResponse.statusCode === 400) {
+            throw new Error("Invalid query " + httpResponse.response)
+        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+            throw new Error("Unknown error when fetching users by query")
+        }
+
+        return parseSnakeCaseToCamelCase(httpResponse.response)
+    })
+}
+
 export function fetchUsersInOrg(
     authUrl: URL,
     integrationApiKey: string,
@@ -150,21 +118,54 @@ export function fetchUsersInOrg(
         include_orgs: query.includeOrgs,
     }
     const queryString = formatQueryParameters(queryParams)
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/org/${query.orgId}?${queryString}`, "GET").then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new Error("Invalid query " + httpResponse.response)
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when fetching users in org")
+            }
+
+            return parseSnakeCaseToCamelCase(httpResponse.response)
+        }
+    )
+}
+
+// POST
+export function fetchBatchUserMetadata(
+    authUrl: URL,
+    integrationApiKey: string,
+    type: string,
+    values: string[],
+    keyFunction: (x: UserMetadata) => string,
+    includeOrgs?: boolean
+): Promise<{ [key: string]: UserMetadata }> {
+    const queryString = includeOrgs ? formatQueryParameters({ include_orgs: includeOrgs }) : ""
+    const jsonBody = { [type]: values }
     return httpRequest(
         authUrl,
         integrationApiKey,
-        `/api/backend/v1/user/org/${query.orgId}?${queryString}`,
-        "GET"
+        `${ENDPOINT_PATH}/${type}?${queryString}`,
+        "POST",
+        JSON.stringify(jsonBody)
     ).then((httpResponse) => {
         if (httpResponse.statusCode === 401) {
             throw new Error("integrationApiKey is incorrect")
         } else if (httpResponse.statusCode === 400) {
-            throw new Error("Invalid query " + httpResponse.response)
+            throw new Error("Bad request " + httpResponse.response)
         } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-            throw new Error("Unknown error when fetching users in org")
+            throw new Error("Unknown error when fetching batch user metadata")
         }
 
-        return parseSnakeCaseToCamelCase(httpResponse.response)
+        const userMetadatas = parseSnakeCaseToCamelCase(httpResponse.response)
+
+        const returnValue: { [key: string]: UserMetadata } = {}
+        for (let userMetadata of userMetadatas) {
+            returnValue[keyFunction(userMetadata)] = userMetadata
+        }
+        return returnValue
     })
 }
 
@@ -200,7 +201,7 @@ export function createUser(
         last_name: createUserRequest.lastName,
         properties: createUserRequest.properties,
     }
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/`, "POST", JSON.stringify(request)).then(
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/`, "POST", JSON.stringify(request)).then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
@@ -215,78 +216,12 @@ export function createUser(
     )
 }
 
-export type UpdateUserMetadataRequest = {
-    username?: string
-    firstName?: string
-    lastName?: string
-    pictureUrl?: string
-    metadata?: { [key: string]: any }
-    properties?: { [key: string]: any }
-}
-
-export function updateUserMetadata(
-    authUrl: URL,
-    integrationApiKey: string,
-    userId: string,
-    updateUserMetadataRequest: UpdateUserMetadataRequest
-): Promise<boolean> {
-    if (!isValidId(userId)) {
-        return Promise.resolve(false)
-    }
-
-    const request = {
-        username: updateUserMetadataRequest.username,
-        first_name: updateUserMetadataRequest.firstName,
-        last_name: updateUserMetadataRequest.lastName,
-        picture_url: updateUserMetadataRequest.pictureUrl,
-        metadata: updateUserMetadataRequest.metadata,
-        properties: updateUserMetadataRequest.properties,
-    }
-    return httpRequest(
-        authUrl,
-        integrationApiKey,
-        `/api/backend/v1/user/${userId}`,
-        "PUT",
-        JSON.stringify(request)
-    ).then((httpResponse) => {
-        if (httpResponse.statusCode === 401) {
-            throw new Error("integrationApiKey is incorrect")
-        } else if (httpResponse.statusCode === 400) {
-            throw new UpdateUserMetadataException(httpResponse.response)
-        } else if (httpResponse.statusCode === 404) {
-            return false
-        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-            throw new Error("Unknown error when updating user metadata")
-        }
-
-        return true
-    })
-}
-
-export function deleteUser(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
-    if (!isValidId(userId)) {
-        return Promise.resolve(false)
-    }
-
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}`, "DELETE").then((httpResponse) => {
-        if (httpResponse.statusCode === 401) {
-            throw new Error("integrationApiKey is incorrect")
-        } else if (httpResponse.statusCode === 404) {
-            return false
-        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-            throw new Error("Unknown error when deleting user")
-        }
-
-        return true
-    })
-}
-
 export function disableUser(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
     if (!isValidId(userId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/disable`, "POST").then(
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${userId}/disable`, "POST").then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
@@ -306,19 +241,17 @@ export function enableUser(authUrl: URL, integrationApiKey: string, userId: stri
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/enable`, "POST").then(
-        (httpResponse) => {
-            if (httpResponse.statusCode === 401) {
-                throw new Error("integrationApiKey is incorrect")
-            } else if (httpResponse.statusCode === 404) {
-                return false
-            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when enabling user")
-            }
-
-            return true
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${userId}/enable`, "POST").then((httpResponse) => {
+        if (httpResponse.statusCode === 401) {
+            throw new Error("integrationApiKey is incorrect")
+        } else if (httpResponse.statusCode === 404) {
+            return false
+        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+            throw new Error("Unknown error when enabling user")
         }
-    )
+
+        return true
+    })
 }
 
 export function disableUser2fa(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
@@ -326,7 +259,7 @@ export function disableUser2fa(authUrl: URL, integrationApiKey: string, userId: 
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/disable_2fa`, "POST").then(
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${userId}/disable_2fa`, "POST").then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
@@ -334,6 +267,84 @@ export function disableUser2fa(authUrl: URL, integrationApiKey: string, userId: 
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
                 throw new Error("Unknown error when disabling 2FA")
+            }
+
+            return true
+        }
+    )
+}
+
+export type InviteUserToOrgRequest = {
+    orgId: string
+    email: string
+    role: string
+}
+
+export function inviteUserToOrg(
+    authUrl: URL,
+    integrationApiKey: string,
+    inviteUserToOrgRequest: InviteUserToOrgRequest
+): Promise<boolean> {
+    const body = {
+        org_id: inviteUserToOrgRequest.orgId,
+        email: inviteUserToOrgRequest.email,
+        role: inviteUserToOrgRequest.role,
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/invite_user`, "POST", JSON.stringify(body)).then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new BadRequestException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when inviting a user to the org")
+            }
+
+            return true
+        }
+    )
+}
+
+// PUT/PATCH
+export type UpdateUserMetadataRequest = {
+    username?: string
+    firstName?: string
+    lastName?: string
+    pictureUrl?: string
+    metadata?: { [key: string]: any }
+    properties?: { [key: string]: any }
+}
+export function updateUserMetadata(
+    authUrl: URL,
+    integrationApiKey: string,
+    userId: string,
+    updateUserMetadataRequest: UpdateUserMetadataRequest
+): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    const request = {
+        username: updateUserMetadataRequest.username,
+        first_name: updateUserMetadataRequest.firstName,
+        last_name: updateUserMetadataRequest.lastName,
+        picture_url: updateUserMetadataRequest.pictureUrl,
+        metadata: updateUserMetadataRequest.metadata,
+        properties: updateUserMetadataRequest.properties,
+    }
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${userId}`, "PUT", JSON.stringify(request)).then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new UpdateUserMetadataException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when updating user metadata")
             }
 
             return true
@@ -363,7 +374,7 @@ export function updateUserEmail(
     return httpRequest(
         authUrl,
         integrationApiKey,
-        `/api/backend/v1/user/${userId}/email`,
+        `${ENDPOINT_PATH}/${userId}/email`,
         "PUT",
         JSON.stringify(request)
     ).then((httpResponse) => {
@@ -403,7 +414,7 @@ export function updateUserPassword(
     return httpRequest(
         authUrl,
         integrationApiKey,
-        `/api/backend/v1/user/${userId}/password`,
+        `${ENDPOINT_PATH}/${userId}/password`,
         "PUT",
         JSON.stringify(request)
     ).then((httpResponse) => {
@@ -426,7 +437,7 @@ export function enableUserCanCreateOrgs(authUrl: URL, integrationApiKey: string,
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/user/${userId}/can_create_orgs/enable`, "PUT").then(
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${userId}/can_create_orgs/enable`, "PUT").then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
@@ -446,54 +457,36 @@ export function disableUserCanCreateOrgs(authUrl: URL, integrationApiKey: string
         return Promise.resolve(false)
     }
 
-    return httpRequest(
-        authUrl,
-        integrationApiKey,
-        `/api/backend/v1/user/${userId}/can_create_orgs/disable`,
-        "PUT"
-    ).then((httpResponse) => {
-        if (httpResponse.statusCode === 401) {
-            throw new Error("integrationApiKey is incorrect")
-        } else if (httpResponse.statusCode === 404) {
-            return false
-        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-            throw new Error("Unknown error when disabling canCreateOrgs")
-        }
-
-        return true
-    })
-}
-
-export type InviteUserToOrgRequest = {
-    orgId: string
-    email: string
-    role: string
-}
-
-export function inviteUserToOrg(
-    authUrl: URL,
-    integrationApiKey: string,
-    inviteUserToOrgRequest: InviteUserToOrgRequest
-): Promise<boolean> {
-    const body = {
-        org_id: inviteUserToOrgRequest.orgId,
-        email: inviteUserToOrgRequest.email,
-        role: inviteUserToOrgRequest.role,
-    }
-
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/invite_user`, "POST", JSON.stringify(body)).then(
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${userId}/can_create_orgs/disable`, "PUT").then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
-            } else if (httpResponse.statusCode === 400) {
-                throw new BadRequestException(httpResponse.response)
             } else if (httpResponse.statusCode === 404) {
                 return false
             } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when inviting a user to the org")
+                throw new Error("Unknown error when disabling canCreateOrgs")
             }
 
             return true
         }
     )
+}
+
+// DELETE
+export function deleteUser(authUrl: URL, integrationApiKey: string, userId: string): Promise<boolean> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${userId}`, "DELETE").then((httpResponse) => {
+        if (httpResponse.statusCode === 401) {
+            throw new Error("integrationApiKey is incorrect")
+        } else if (httpResponse.statusCode === 404) {
+            return false
+        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+            throw new Error("Unknown error when deleting user")
+        }
+
+        return true
+    })
 }
