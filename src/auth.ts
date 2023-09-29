@@ -1,13 +1,11 @@
 import jwt, { VerifyOptions } from "jsonwebtoken"
 import {
-    AccessToken,
-    createAccessToken,
-    CreateAccessTokenRequest,
     migrateUserFromExternalSource,
     MigrateUserFromExternalSourceRequest,
     validateOrgApiKey,
     validatePersonalApiKey,
 } from "./api"
+import { AccessToken, createAccessToken, CreateAccessTokenRequest } from "./api/accessToken"
 import {
     ApiKeysCreateRequest,
     ApiKeysQueryRequest,
