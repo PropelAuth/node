@@ -9,12 +9,15 @@ import { httpRequest } from "../http"
 import { CreatedOrg, Org } from "../user"
 import { isValidId, parseSnakeCaseToCamelCase } from "../utils"
 
+const ENDPOINT_PATH = "/api/backend/v1/org"
+
+// GET
 export function fetchOrg(authUrl: URL, integrationApiKey: string, orgId: string): Promise<Org | null> {
     if (!isValidId(orgId)) {
         return Promise.resolve(null)
     }
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/${orgId}`, "GET").then((httpResponse) => {
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${orgId}`, "GET").then((httpResponse) => {
         if (httpResponse.statusCode === 401) {
             throw new Error("integrationApiKey is incorrect")
         } else if (httpResponse.statusCode === 404) {
@@ -31,6 +34,7 @@ export function fetchOrg(authUrl: URL, integrationApiKey: string, orgId: string)
     })
 }
 
+// POST
 export type OrgQuery = {
     pageSize?: number
     pageNumber?: number
@@ -51,7 +55,7 @@ export function fetchOrgByQuery(authUrl: URL, integrationApiKey: string, query: 
         page_number: query.pageNumber,
         order_by: query.orderBy,
     }
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/query`, "POST", JSON.stringify(request)).then(
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/query`, "POST", JSON.stringify(request)).then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
@@ -100,7 +104,7 @@ export function createOrg(
     const request = {
         name: createOrgRequest.name,
     }
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/`, "POST", JSON.stringify(request)).then(
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/`, "POST", JSON.stringify(request)).then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
@@ -131,25 +135,21 @@ export function addUserToOrg(
         org_id: addUserToOrgRequest.orgId,
         role: addUserToOrgRequest.role,
     }
-    return httpRequest(
-        authUrl,
-        integrationApiKey,
-        `/api/backend/v1/org/add_user`,
-        "POST",
-        JSON.stringify(request)
-    ).then((httpResponse) => {
-        if (httpResponse.statusCode === 401) {
-            throw new Error("integrationApiKey is incorrect")
-        } else if (httpResponse.statusCode === 400) {
-            throw new AddUserToOrgException(httpResponse.response)
-        } else if (httpResponse.statusCode === 404) {
-            return false
-        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-            throw new Error("Unknown error when adding user to org")
-        }
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/add_user`, "POST", JSON.stringify(request)).then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new AddUserToOrgException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when adding user to org")
+            }
 
-        return true
-    })
+            return true
+        }
+    )
 }
 
 export type ChangeUserRoleInOrgRequest = {
@@ -171,7 +171,7 @@ export function changeUserRoleInOrg(
     return httpRequest(
         authUrl,
         integrationApiKey,
-        `/api/backend/v1/org/change_role`,
+        `${ENDPOINT_PATH}/change_role`,
         "POST",
         JSON.stringify(request)
     ).then((httpResponse) => {
@@ -206,7 +206,7 @@ export function removeUserFromOrg(
     return httpRequest(
         authUrl,
         integrationApiKey,
-        `/api/backend/v1/org/remove_user`,
+        `${ENDPOINT_PATH}/remove_user`,
         "POST",
         JSON.stringify(request)
     ).then((httpResponse) => {
@@ -224,6 +224,55 @@ export function removeUserFromOrg(
     })
 }
 
+export function allowOrgToSetupSamlConnection(
+    authUrl: URL,
+    integrationApiKey: string,
+    orgId: string
+): Promise<boolean> {
+    if (!isValidId(orgId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${orgId}/allow_saml`, "POST").then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when allowing org to setup SAML connection")
+            }
+
+            return true
+        }
+    )
+}
+
+export function disallowOrgToSetupSamlConnection(
+    authUrl: URL,
+    integrationApiKey: string,
+    orgId: string
+): Promise<boolean> {
+    if (!isValidId(orgId)) {
+        return Promise.resolve(false)
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${orgId}/disallow_saml`, "POST").then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when disallowing org to setup SAML connection")
+            }
+
+            return true
+        }
+    )
+}
+
+// PUT/PATCH
 export type UpdateOrgRequest = {
     orgId: string
     name?: string
@@ -250,7 +299,7 @@ export function updateOrg(
     return httpRequest(
         authUrl,
         integrationApiKey,
-        `/api/backend/v1/org/${updateOrgRequest.orgId}`,
+        `${ENDPOINT_PATH}/${updateOrgRequest.orgId}`,
         "PUT",
         JSON.stringify(request)
     ).then((httpResponse) => {
@@ -268,12 +317,13 @@ export function updateOrg(
     })
 }
 
+// DELETE
 export function deleteOrg(authUrl: URL, integrationApiKey: string, orgId: string): Promise<boolean> {
     if (!isValidId(orgId)) {
         return Promise.resolve(false)
     }
 
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/${orgId}`, "DELETE").then((httpResponse) => {
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${orgId}`, "DELETE").then((httpResponse) => {
         if (httpResponse.statusCode === 401) {
             throw new Error("integrationApiKey is incorrect")
         } else if (httpResponse.statusCode === 404) {
@@ -284,52 +334,4 @@ export function deleteOrg(authUrl: URL, integrationApiKey: string, orgId: string
 
         return true
     })
-}
-
-export function allowOrgToSetupSamlConnection(
-    authUrl: URL,
-    integrationApiKey: string,
-    orgId: string
-): Promise<boolean> {
-    if (!isValidId(orgId)) {
-        return Promise.resolve(false)
-    }
-
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/${orgId}/allow_saml`, "POST").then(
-        (httpResponse) => {
-            if (httpResponse.statusCode === 401) {
-                throw new Error("integrationApiKey is incorrect")
-            } else if (httpResponse.statusCode === 404) {
-                return false
-            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when allowing org to setup SAML connection")
-            }
-
-            return true
-        }
-    )
-}
-
-export function disallowOrgToSetupSamlConnection(
-    authUrl: URL,
-    integrationApiKey: string,
-    orgId: string
-): Promise<boolean> {
-    if (!isValidId(orgId)) {
-        return Promise.resolve(false)
-    }
-
-    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/org/${orgId}/disallow_saml`, "POST").then(
-        (httpResponse) => {
-            if (httpResponse.statusCode === 401) {
-                throw new Error("integrationApiKey is incorrect")
-            } else if (httpResponse.statusCode === 404) {
-                return false
-            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when disallowing org to setup SAML connection")
-            }
-
-            return true
-        }
-    )
 }
