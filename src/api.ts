@@ -9,37 +9,6 @@ import {
 import { httpRequest } from "./http"
 import { OrgApiKeyValidation, OrgMemberInfo, PersonalApiKeyValidation, User } from "./user"
 
-export type TokenVerificationMetadata = {
-    verifierKey: string
-    issuer: string
-}
-
-export function fetchTokenVerificationMetadata(
-    authUrl: URL,
-    integrationApiKey: string,
-    manualTokenVerificationMetadata?: TokenVerificationMetadata
-): Promise<TokenVerificationMetadata> {
-    if (manualTokenVerificationMetadata) {
-        return Promise.resolve(manualTokenVerificationMetadata)
-    }
-
-    return httpRequest(authUrl, integrationApiKey, "/api/v1/token_verification_metadata", "GET").then(
-        (httpResponse) => {
-            if (httpResponse.statusCode === 401) {
-                throw new Error("integrationApiKey is incorrect")
-            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when fetching token verification metadata")
-            }
-
-            const jsonParse = JSON.parse(httpResponse.response)
-            return {
-                verifierKey: jsonParse.verifier_key_pem,
-                issuer: formatIssuer(authUrl),
-            }
-        }
-    )
-}
-
 export type CreateMagicLinkRequest = {
     email: string
     redirectToUrl?: string
@@ -240,10 +209,6 @@ export function formatQueryParameters(obj: { [key: string]: any }): string {
         }
     }
     return params.toString()
-}
-
-function formatIssuer(authUrl: URL): string {
-    return authUrl.origin
 }
 
 export function parseSnakeCaseToCamelCase(response: string) {

@@ -5,11 +5,9 @@ import {
     CreateAccessTokenRequest,
     createMagicLink,
     CreateMagicLinkRequest,
-    fetchTokenVerificationMetadata,
     MagicLink,
     migrateUserFromExternalSource,
     MigrateUserFromExternalSourceRequest,
-    TokenVerificationMetadata,
     validateOrgApiKey,
     validatePersonalApiKey,
 } from "./api"
@@ -44,6 +42,7 @@ import {
     updateOrg,
     UpdateOrgRequest,
 } from "./api/org"
+import { fetchTokenVerificationMetadata, TokenVerificationMetadata } from "./api/tokenVerificationMetadata"
 import {
     createUser,
     CreateUserRequest,
