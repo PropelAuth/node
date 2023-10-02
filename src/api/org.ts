@@ -313,12 +313,16 @@ export function createOrgSamlConnectionLink(
         return Promise.reject("Invalid orgId")
     }
 
-    let endpointPath = `${ENDPOINT_PATH}/${orgId}/create_saml_connection_link`
-    if (expiresInSeconds) {
-        endpointPath += `?expires_in_seconds=${expiresInSeconds}`
+    const request = {
+        expires_in_seconds: expiresInSeconds,
     }
-
-    return httpRequest(authUrl, integrationApiKey, endpointPath, "POST").then((httpResponse) => {
+    return httpRequest(
+        authUrl,
+        integrationApiKey,
+        `${ENDPOINT_PATH}/${orgId}/create_saml_connection_link`,
+        "POST",
+        JSON.stringify(request)
+    ).then((httpResponse) => {
         if (httpResponse.statusCode === 401) {
             throw new Error("integrationApiKey is incorrect")
         } else if (httpResponse.statusCode === 404) {
