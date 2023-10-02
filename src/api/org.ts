@@ -306,6 +306,10 @@ export type UpdateOrgRequest = {
     canSetupSaml?: boolean
     maxUsers?: number
     metadata?: { [key: string]: any }
+    canJoinOnEmailDomainMatch?: boolean // In the backend, this is the `domain_autojoin` argument.
+    membersMustHaveEmailDomainMatch?: boolean // In the backend, this is the `domain_restrict` argument.
+    domain?: string
+    // TODO: Add `require_2fa_by` optional argument.
 }
 
 export function updateOrg(
@@ -322,6 +326,9 @@ export function updateOrg(
         can_setup_saml: updateOrgRequest.canSetupSaml,
         metadata: updateOrgRequest.metadata,
         max_users: updateOrgRequest.maxUsers,
+        domain_autojoin: updateOrgRequest.canJoinOnEmailDomainMatch,
+        domain_restrict: updateOrgRequest.membersMustHaveEmailDomainMatch,
+        domain: updateOrgRequest.domain,
     }
     return httpRequest(
         authUrl,
