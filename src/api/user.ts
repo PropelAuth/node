@@ -316,6 +316,7 @@ export type UpdateUserMetadataRequest = {
     pictureUrl?: string
     metadata?: { [key: string]: any }
     properties?: { [key: string]: any }
+    updatePasswordRequired?: boolean
 }
 export function updateUserMetadata(
     authUrl: URL,
@@ -334,6 +335,7 @@ export function updateUserMetadata(
         picture_url: updateUserMetadataRequest.pictureUrl,
         metadata: updateUserMetadataRequest.metadata,
         properties: updateUserMetadataRequest.properties,
+        update_password_required: updateUserMetadataRequest.updatePasswordRequired,
     }
     return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/${userId}`, "PUT", JSON.stringify(request)).then(
         (httpResponse) => {
