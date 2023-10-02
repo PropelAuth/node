@@ -326,8 +326,8 @@ export function updateOrg(
         can_setup_saml: updateOrgRequest.canSetupSaml,
         metadata: updateOrgRequest.metadata,
         max_users: updateOrgRequest.maxUsers,
-        domain_autojoin: updateOrgRequest.canJoinOnEmailDomainMatch,
-        domain_restrict: updateOrgRequest.membersMustHaveEmailDomainMatch,
+        autojoin_by_domain: updateOrgRequest.canJoinOnEmailDomainMatch,
+        restrict_to_domain: updateOrgRequest.membersMustHaveEmailDomainMatch,
         domain: updateOrgRequest.domain,
     }
     return httpRequest(
