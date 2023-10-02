@@ -22,6 +22,8 @@ import {
     ChangeUserRoleInOrgRequest,
     createOrg,
     CreateOrgRequest,
+    createOrgSamlConnectionLink,
+    CreateSAMLConnectionLinkResponse,
     deleteOrg,
     disallowOrgToSetupSamlConnection,
     fetchOrg,
@@ -283,6 +285,13 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return updateOrg(authUrl, integrationApiKey, updateOrgRequest)
     }
 
+    function createOrgSamlConnectionLinkWrapper(
+        orgId: string,
+        expiresInSeconds?: number
+    ): Promise<CreateSAMLConnectionLinkResponse> {
+        return createOrgSamlConnectionLink(authUrl, integrationApiKey, orgId, expiresInSeconds)
+    }
+
     function deleteOrgWrapper(orgId: string): Promise<boolean> {
         return deleteOrg(authUrl, integrationApiKey, orgId)
     }
@@ -376,6 +385,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         changeUserRoleInOrg: changeUserRoleInOrgWrapper,
         removeUserFromOrg: removeUserFromOrgWrapper,
         updateOrg: updateOrgWrapper,
+        createOrgSamlConnectionLink: createOrgSamlConnectionLinkWrapper,
         deleteOrg: deleteOrgWrapper,
         allowOrgToSetupSamlConnection: allowOrgToSetupSamlConnectionWrapper,
         disallowOrgToSetupSamlConnection: disallowOrgToSetupSamlConnectionWrapper,

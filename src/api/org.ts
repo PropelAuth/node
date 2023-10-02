@@ -299,6 +299,38 @@ export function disallowOrgToSetupSamlConnection(
     )
 }
 
+export type CreateSAMLConnectionLinkResponse = {
+    url: string
+}
+
+export function createOrgSamlConnectionLink(
+    authUrl: URL,
+    integrationApiKey: string,
+    orgId: string,
+    expiresInSeconds?: number
+): Promise<CreateSAMLConnectionLinkResponse> {
+    if (!isValidId(orgId)) {
+        return Promise.reject("Invalid orgId")
+    }
+
+    let endpointPath = `${ENDPOINT_PATH}/${orgId}/create_saml_connection_link`
+    if (expiresInSeconds) {
+        endpointPath += `?expires_in_seconds=${expiresInSeconds}`
+    }
+
+    return httpRequest(authUrl, integrationApiKey, endpointPath, "POST").then((httpResponse) => {
+        if (httpResponse.statusCode === 401) {
+            throw new Error("integrationApiKey is incorrect")
+        } else if (httpResponse.statusCode === 404) {
+            return false
+        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+            throw new Error("Unknown error when creating SAML connection link")
+        }
+
+        return JSON.parse(httpResponse.response)
+    })
+}
+
 // PUT/PATCH
 export type UpdateOrgRequest = {
     orgId: string
