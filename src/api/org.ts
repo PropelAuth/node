@@ -96,7 +96,7 @@ export type CreateOrgRequest = {
     name: string
     domain?: string
     enableAutoJoiningByDomain?: boolean
-    memebersMustHaveMatchingDomain?: boolean
+    membersMustHaveMatchingDomain?: boolean
     maxUsers?: number
 }
 
@@ -104,7 +104,7 @@ type CreateOrgApiRequest = {
     name: string
     domain?: string
     enable_auto_joining_by_domain?: boolean
-    memebers_must_have_matching_domain?: boolean
+    members_must_have_matching_domain?: boolean
     max_users?: number
 }
 
@@ -117,13 +117,13 @@ export function createOrg(
         name,
         domain,
         enableAutoJoiningByDomain = false,
-        memebersMustHaveMatchingDomain = false,
+        membersMustHaveMatchingDomain = false,
         maxUsers,
     } = createOrgRequest
     const request: CreateOrgApiRequest = {
         name,
         enable_auto_joining_by_domain: enableAutoJoiningByDomain,
-        memebers_must_have_matching_domain: memebersMustHaveMatchingDomain,
+        members_must_have_matching_domain: membersMustHaveMatchingDomain,
     }
     if (domain) {
         request["domain"] = domain
