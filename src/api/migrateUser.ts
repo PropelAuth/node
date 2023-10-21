@@ -44,7 +44,7 @@ export function migrateUserFromExternalSource(
         username: migrateUserFromExternalSourceRequest.username,
         properties: migrateUserFromExternalSourceRequest.properties,
     }
-    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}`, "POST", JSON.stringify(request)).then(
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/`, "POST", JSON.stringify(request)).then(
         (httpResponse) => {
             if (httpResponse.statusCode === 401) {
                 throw new Error("integrationApiKey is incorrect")
