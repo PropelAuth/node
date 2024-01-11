@@ -29,6 +29,10 @@ export type CreatedOrg = {
     name: string,
 }
 
+export type CreatedUser = {
+    userId: string,
+}
+
 export type UserMetadata = {
     userId: string
 

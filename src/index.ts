@@ -41,6 +41,7 @@ export {
 } from "./exceptions"
 export {
     CreatedOrg,
+    CreatedUser,
     InternalOrgMemberInfo,
     InternalUser,
     Org,
