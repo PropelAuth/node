@@ -6,7 +6,7 @@ import {
     UpdateUserPasswordException,
 } from "../exceptions"
 import { httpRequest } from "../http"
-import { User, UserMetadata } from "../user"
+import { CreatedUser, UserMetadata } from "../user"
 import { formatQueryParameters, isValidId, parseSnakeCaseToCamelCase } from "../utils"
 
 const ENDPOINT_PATH = "/api/backend/v1/user"
@@ -187,7 +187,7 @@ export function createUser(
     authUrl: URL,
     integrationApiKey: string,
     createUserRequest: CreateUserRequest
-): Promise<User> {
+): Promise<CreatedUser> {
     const request = {
         email: createUserRequest.email,
         email_confirmed: createUserRequest.emailConfirmed,

@@ -68,6 +68,7 @@ import {
     ApiKeyResultPage,
     ApiKeyValidation,
     CreatedOrg,
+    CreatedUser,
     InternalUser,
     Org,
     OrgApiKeyValidation,
@@ -199,7 +200,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         return fetchUsersInOrg(authUrl, integrationApiKey, usersInOrgQuery)
     }
 
-    function createUserWrapper(createUserRequest: CreateUserRequest): Promise<User> {
+    function createUserWrapper(createUserRequest: CreateUserRequest): Promise<CreatedUser> {
         return createUser(authUrl, integrationApiKey, createUserRequest)
     }
 
