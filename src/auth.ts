@@ -48,6 +48,7 @@ import {
     fetchUserMetadataByQuery,
     fetchUserMetadataByUserIdWithIdCheck,
     fetchUsersByQuery,
+    fetchUserSignupQueryParams,
     fetchUsersInOrg,
     inviteUserToOrg,
     InviteUserToOrgRequest,
@@ -57,6 +58,7 @@ import {
     UpdateUserMetadataRequest,
     updateUserPassword,
     UpdateUserPasswordRequest,
+    UserSignupQueryParams,
     UsersInOrgQuery,
     UsersPagedResponse,
     UsersQuery,
@@ -140,6 +142,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
             username: username,
             include_orgs: includeOrgs || false,
         })
+    }
+
+    function fetchUserSignupQueryParamsWrapper(userId: string): Promise<UserSignupQueryParams | null> {
+        return fetchUserSignupQueryParams(authUrl, integrationApiKey, userId)
     }
 
     function fetchBatchUserMetadataByUserIds(
@@ -349,6 +355,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         fetchUserMetadataByUserId,
         fetchUserMetadataByEmail,
         fetchUserMetadataByUsername,
+        fetchUserSignupQueryParams: fetchUserSignupQueryParamsWrapper,
         fetchBatchUserMetadataByUserIds,
         fetchBatchUserMetadataByEmails,
         fetchBatchUserMetadataByUsernames,

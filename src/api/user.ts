@@ -511,3 +511,34 @@ export function deleteUser(authUrl: URL, integrationApiKey: string, userId: stri
         return true
     })
 }
+
+export type UserSignupQueryParams = {
+    userSignupQueryParameters: { [key: string]: string }
+}
+
+export async function fetchUserSignupQueryParams(
+    authUrl: URL,
+    integrationApiKey: string,
+    userId: string
+): Promise<UserSignupQueryParams | null> {
+    if (!isValidId(userId)) {
+        return Promise.resolve(null)
+    }
+
+    const httpResponse = await httpRequest(
+        authUrl,
+        integrationApiKey,
+        `${ENDPOINT_PATH}/${userId}/signup_query_parameters`,
+        "GET"
+    )
+    if (httpResponse.statusCode === 401) {
+        throw new Error("integrationApiKey is incorrect")
+    } else if (httpResponse.statusCode === 404) {
+        return null
+    } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+        throw new Error("Unknown error when fetching user signup query params")
+    }
+
+    const snakeCase = JSON.parse(httpResponse.response)
+    return { userSignupQueryParameters: snakeCase["user_signup_query_parameters"] }
+}
