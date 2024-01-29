@@ -7,6 +7,7 @@ export {
     InviteUserToOrgRequest,
     UpdateUserEmailRequest,
     UpdateUserMetadataRequest,
+    UserSignupQueryParams,
     UsersInOrgQuery,
     UsersPagedResponse,
     UsersQuery,
