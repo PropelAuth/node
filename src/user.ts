@@ -11,7 +11,6 @@ export type User = {
     impersonatorUserId?: string
     metadata?: { [key: string]: any }
     properties?: UserProperties
-    createdAt: number
     pictureUrl?: string
     hasPassword?: boolean
     hasMfaEnabled?: boolean
@@ -24,7 +23,6 @@ export class UserClass {
 
     // Metadata about the user
     public email: string
-    public createdAt: number
     public firstName?: string
     public lastName?: string
     public username?: string
@@ -47,7 +45,6 @@ export class UserClass {
         this.firstName = userFields.firstName
         this.lastName = userFields.lastName
         this.username = userFields.username
-        this.createdAt = userFields.createdAt
         this.pictureUrl = userFields.pictureUrl
         this.hasPassword = userFields.hasPassword
         this.hasMfaEnabled = userFields.hasMfaEnabled
@@ -149,7 +146,6 @@ export class UserClass {
                 {
                     userId: obj.userId,
                     email: obj.email,
-                    createdAt: obj.createdAt,
                     firstName: obj.firstName,
                     lastName: obj.lastName,
                     username: obj.username,
@@ -318,7 +314,6 @@ export type InternalUser = {
     has_password?: boolean
     has_mfa_enabled?: boolean
     can_create_orgs?: boolean
-    created_at: number
 
     // If you used our migration APIs to migrate this user from a different system, this is their original ID from that system.
     legacy_user_id?: string
@@ -339,7 +334,6 @@ export function toUser(snake_case: InternalUser): User {
         impersonatorUserId: snake_case.impersonator_user_id,
         metadata: snake_case.metadata,
         properties: snake_case.properties,
-        createdAt: snake_case.created_at,
         pictureUrl: snake_case.picture_url,
         hasPassword: snake_case.has_password,
         hasMfaEnabled: snake_case.has_mfa_enabled,
