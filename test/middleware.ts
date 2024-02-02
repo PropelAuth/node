@@ -1,5 +1,4 @@
 import { generateKeyPair } from "crypto"
-import jwt from "jsonwebtoken"
 import nock from "nock"
 import { v4 as uuid } from "uuid"
 import { initBaseAuth } from "../src"
@@ -533,7 +532,7 @@ async function setupErrorTokenVerificationMetadataEndpoint(statusCode: number) {
 }
 
 function createAccessToken({ internalUser, privateKey, expiresIn, issuer }: CreateAccessTokenArgs): string {
-    return jwt.sign(internalUser, privateKey, {
+    return jose.sign(internalUser, privateKey, {
         algorithm: ALGO,
         expiresIn: expiresIn ? expiresIn : "1d",
         issuer: issuer ? issuer : AUTH_URL,
