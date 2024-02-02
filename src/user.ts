@@ -136,10 +136,10 @@ export class UserClass {
     }
 
     public static fromJSON(json: string): UserClass {
-        const obj = JSON.parse(json)
+        const obj: User = JSON.parse(json)
         const orgIdToUserOrgInfo: { [orgId: string]: OrgMemberInfo } = {}
-        for (const orgId in obj.orgIdToUserOrgInfo) {
-            orgIdToUserOrgInfo[orgId] = OrgMemberInfo.fromJSON(JSON.stringify(obj.orgIdToUserOrgInfo[orgId]))
+        for (const orgId in obj.orgIdToOrgMemberInfo) {
+            orgIdToUserOrgInfo[orgId] = OrgMemberInfo.fromJSON(JSON.stringify(obj.orgIdToOrgMemberInfo[orgId]))
         }
         try {
             return new UserClass(

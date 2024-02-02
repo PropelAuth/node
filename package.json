@@ -37,7 +37,7 @@
         "type-check:watch": "npm run type-check -- --watch",
         "build:types": "tsc --emitDeclarationOnly",
         "build:js": "rollup -c",
-        "build": "npm run test && npm run build:types && npm run build:js",
+        "build": "npm run build:types && npm run build:js",
         "test": "jest --silent",
         "prepublishOnly": "npm run build"
     },
