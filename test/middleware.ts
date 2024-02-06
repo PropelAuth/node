@@ -1,5 +1,5 @@
-import { generateKeyPair } from "crypto"
-import jwt from "jsonwebtoken"
+import { createPrivateKey, generateKeyPair } from "crypto"
+import * as jose from "jose"
 import nock from "nock"
 import { v4 as uuid } from "uuid"
 import { initBaseAuth } from "../src"
@@ -30,7 +30,7 @@ test("validateAccessTokenAndGetUser gets correct user", async () => {
     const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL + "/", apiKey })
 
     const internalUser = randomInternalUser()
-    const accessToken = createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey })
 
     const authHeader = `Bearer ${accessToken}`
 
@@ -53,7 +53,7 @@ test("when manualTokenVerificationMetadata is specified, no fetch is made", asyn
     })
 
     const internalUser = randomInternalUser()
-    const accessToken = createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey })
 
     const authHeader = `Bearer ${accessToken}`
 
@@ -68,7 +68,7 @@ test("validateAccessTokenAndGetUser rejects expired access tokens", async () => 
     const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL + "/", apiKey })
 
     const internalUser = randomInternalUser()
-    const accessToken = createAccessToken({ internalUser, expiresIn: "30m", privateKey })
+    const accessToken = await createAccessToken({ internalUser, expiresIn: "30m", privateKey })
 
     // 31 minutes
     jest.advanceTimersByTime(1000 * 60 * 31)
@@ -115,7 +115,7 @@ test("validateAccessTokenAndGetUser fails with incorrect issuer", async () => {
     const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const internalUser = randomInternalUser()
-    const accessToken = createAccessToken({ internalUser, privateKey, issuer: "bad" })
+    const accessToken = await createAccessToken({ internalUser, privateKey, issuer: "bad" })
 
     const authHeader = `Bearer ${accessToken}`
 
@@ -285,7 +285,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole get user and org f
         orgId: orgMemberInfo.org_id,
         orgName: orgMemberInfo.org_name,
     }
-    const accessToken = createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey })
 
     const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrgInfo(`Bearer ${accessToken}`, orgInfo)
 
@@ -309,7 +309,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole fails for valid ac
         orgId: uuid(),
         orgName: "orgName",
     }
-    const accessToken = createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey })
 
     await expect(validateAccessTokenAndGetUserWithOrgInfo(`Bearer ${accessToken}`, orgInfo)).rejects.toThrow(
         ForbiddenException
@@ -349,7 +349,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole works with miniumu
         orgName: orgMemberInfo.org_name,
     }
     const user = toUser(internalUser)
-    const accessToken = createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey })
 
     const rolesThatShouldSucceed = new Set(["Admin", "Member"])
     for (let role of ["Owner", "Admin", "Member"]) {
@@ -391,7 +391,7 @@ test("validateAccessTokenAndGetUserWithOrgWithExactRole works with requiredRole"
         orgName: orgMemberInfo.org_name,
     }
     const user = toUser(internalUser)
-    const accessToken = createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey })
 
     const rolesThatShouldSucceed = new Set(["Admin"])
     for (let role of ["Owner", "Admin", "Member"]) {
@@ -433,7 +433,7 @@ test("validateAccessTokenAndGetUserWithOrgWithPermission works with permission",
         orgName: orgMemberInfo.org_name,
     }
     const user = toUser(internalUser)
-    const accessToken = createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey })
 
     const permissionsThatShouldSucceed = new Set(["read", "write"])
     for (let permission of ["read", "write", "delete"]) {
@@ -475,7 +475,7 @@ test("validateAccessTokenAndGetUserWithOrgWithAllPermissions works with permissi
         orgName: orgMemberInfo.org_name,
     }
     const user = toUser(internalUser)
-    const accessToken = createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey })
 
     // these should succeed
     for (let permissions of [["read"], ["write"], ["read", "write"], []]) {
@@ -532,12 +532,18 @@ async function setupErrorTokenVerificationMetadataEndpoint(statusCode: number) {
     return { apiKey, scope }
 }
 
-function createAccessToken({ internalUser, privateKey, expiresIn, issuer }: CreateAccessTokenArgs): string {
-    return jwt.sign(internalUser, privateKey, {
-        algorithm: ALGO,
-        expiresIn: expiresIn ? expiresIn : "1d",
-        issuer: issuer ? issuer : AUTH_URL,
-    })
+async function createAccessToken({
+    internalUser,
+    privateKey,
+    expiresIn,
+    issuer,
+}: CreateAccessTokenArgs): Promise<string> {
+    const accessToken = await new jose.SignJWT(internalUser)
+        .setProtectedHeader({ alg: ALGO })
+        .setIssuer(issuer ? issuer : AUTH_URL)
+        .setExpirationTime(expiresIn ? expiresIn : "1d")
+        .sign(createPrivateKey(privateKey))
+    return accessToken
 }
 
 async function generateRsaKeyPair(): Promise<{ publicKey: string; privateKey: string }> {

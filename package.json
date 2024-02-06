@@ -12,8 +12,7 @@
         "user"
     ],
     "dependencies": {
-        "jose": "^5.2.0",
-        "jsonwebtoken": "^9.0.2"
+        "jose": "^5.2.0"
     },
     "devDependencies": {
         "@rollup/plugin-commonjs": "^19.0.0",
