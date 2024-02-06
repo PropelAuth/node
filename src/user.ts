@@ -242,6 +242,19 @@ export class OrgMemberInfo {
         this.userPermissions = userPermissions
     }
 
+    // getters
+    public get assignedRole(): string {
+        return this.userAssignedRole
+    }
+
+    public get permissions(): string[] {
+        return this.userPermissions
+    }
+
+    get inheritedRolesPlusCurrentRole(): string[] {
+        return this.userInheritedRolesPlusCurrentRole
+    }
+
     // validation methods
     public isRole(role: string): boolean {
         return this.userAssignedRole === role
