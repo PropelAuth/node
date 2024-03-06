@@ -3,7 +3,7 @@ export type UserProperties = { [key: string]: unknown }
 export type User = {
     userId: string
     orgIdToOrgMemberInfo?: OrgIdToOrgMemberInfo
-    orgMemberInfo?: OrgMemberInfo // This will only be defined when  Active Org is enabled.
+    orgMemberInfo?: OrgMemberInfo // This will only be defined when Active Org is enabled.
     email: string
     firstName?: string
     lastName?: string
@@ -340,7 +340,7 @@ export type InternalOrgMemberInfo = {
 export type InternalUser = {
     user_id: string
     org_id_to_org_member_info?: { [org_id: string]: InternalOrgMemberInfo }
-    org_member_info?: InternalOrgMemberInfo // This will only be defined when  Active Org is enabled.
+    org_member_info?: InternalOrgMemberInfo // This will only be defined when Active Org is enabled.
 
     email: string
     first_name?: string
