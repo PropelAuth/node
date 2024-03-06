@@ -11,7 +11,6 @@ export type User = {
     impersonatorUserId?: string
     metadata?: { [key: string]: any }
     properties?: UserProperties
-    pictureUrl?: string
     hasPassword?: boolean
     hasMfaEnabled?: boolean
     canCreateOrgs?: boolean
@@ -27,7 +26,6 @@ export class UserClass {
     public lastName?: string
     public username?: string
     public properties?: UserProperties
-    public pictureUrl?: string
     public hasPassword?: boolean
     public hasMfaEnabled?: boolean
     public canCreateOrgs?: boolean
@@ -45,7 +43,6 @@ export class UserClass {
         this.firstName = userFields.firstName
         this.lastName = userFields.lastName
         this.username = userFields.username
-        this.pictureUrl = userFields.pictureUrl
         this.hasPassword = userFields.hasPassword
         this.hasMfaEnabled = userFields.hasMfaEnabled
         this.canCreateOrgs = userFields.canCreateOrgs
@@ -152,7 +149,6 @@ export class UserClass {
                     legacyUserId: obj.legacyUserId,
                     impersonatorUserId: obj.impersonatorUserId,
                     properties: obj.properties,
-                    pictureUrl: obj.pictureUrl,
                     hasPassword: obj.hasPassword,
                     hasMfaEnabled: obj.hasMfaEnabled,
                     canCreateOrgs: obj.canCreateOrgs,
@@ -323,7 +319,6 @@ export type InternalUser = {
     first_name?: string
     last_name?: string
     username?: string
-    picture_url?: string
     has_password?: boolean
     has_mfa_enabled?: boolean
     can_create_orgs?: boolean
@@ -347,7 +342,6 @@ export function toUser(snake_case: InternalUser): User {
         impersonatorUserId: snake_case.impersonator_user_id,
         metadata: snake_case.metadata,
         properties: snake_case.properties,
-        pictureUrl: snake_case.picture_url,
         hasPassword: snake_case.has_password,
         hasMfaEnabled: snake_case.has_mfa_enabled,
         canCreateOrgs: snake_case.can_create_orgs,
