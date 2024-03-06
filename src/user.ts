@@ -3,6 +3,7 @@ export type UserProperties = { [key: string]: unknown }
 export type User = {
     userId: string
     orgIdToOrgMemberInfo?: OrgIdToOrgMemberInfo
+    orgMemberInfo?: OrgMemberInfo // This will only be defined when  Active Org is enabled.
     email: string
     firstName?: string
     lastName?: string
@@ -14,6 +15,7 @@ export type User = {
     hasPassword?: boolean
     hasMfaEnabled?: boolean
     canCreateOrgs?: boolean
+    activeOrgId?: string
 }
 
 export class UserClass {
@@ -29,6 +31,7 @@ export class UserClass {
     public hasPassword?: boolean
     public hasMfaEnabled?: boolean
     public canCreateOrgs?: boolean
+    public activeOrgId?: string
 
     // If you used our migration APIs to migrate this user from a different system,
     // this is their original ID from that system.
@@ -46,6 +49,7 @@ export class UserClass {
         this.hasPassword = userFields.hasPassword
         this.hasMfaEnabled = userFields.hasMfaEnabled
         this.canCreateOrgs = userFields.canCreateOrgs
+        this.activeOrgId = userFields.activeOrgId
 
         this.legacyUserId = userFields.legacyUserId
         this.impersonatorUserId = userFields.impersonatorUserId
@@ -58,6 +62,18 @@ export class UserClass {
         }
 
         return this.orgIdToUserOrgInfo[orgId]
+    }
+
+    public getActiveOrg(): OrgMemberInfo | undefined {
+        if (!this.activeOrgId) {
+            return undefined
+        }
+
+        return this.getOrg(this.activeOrgId)
+    }
+
+    public getActiveOrgId(): string | undefined {
+        return this.activeOrgId
     }
 
     public getOrgByName(orgName: string): OrgMemberInfo | undefined {
@@ -133,25 +149,35 @@ export class UserClass {
     }
 
     public static fromJSON(json: string): UserClass {
-        const obj: User = JSON.parse(json)
+        const decodedUser: User = JSON.parse(json)
+
         const orgIdToUserOrgInfo: { [orgId: string]: OrgMemberInfo } = {}
-        for (const orgId in obj.orgIdToOrgMemberInfo) {
-            orgIdToUserOrgInfo[orgId] = OrgMemberInfo.fromJSON(JSON.stringify(obj.orgIdToOrgMemberInfo[orgId]))
+        let activeOrgId: string | undefined = undefined
+        if (!!decodedUser.orgMemberInfo) {
+            activeOrgId = decodedUser.orgMemberInfo.orgId
+            orgIdToUserOrgInfo[activeOrgId] = OrgMemberInfo.fromJSON(JSON.stringify(decodedUser.orgMemberInfo))
+        } else {
+            for (const orgId in decodedUser.orgIdToOrgMemberInfo) {
+                orgIdToUserOrgInfo[orgId] = OrgMemberInfo.fromJSON(
+                    JSON.stringify(decodedUser.orgIdToOrgMemberInfo[orgId])
+                )
+            }
         }
         try {
             return new UserClass(
                 {
-                    userId: obj.userId,
-                    email: obj.email,
-                    firstName: obj.firstName,
-                    lastName: obj.lastName,
-                    username: obj.username,
-                    legacyUserId: obj.legacyUserId,
-                    impersonatorUserId: obj.impersonatorUserId,
-                    properties: obj.properties,
-                    hasPassword: obj.hasPassword,
-                    hasMfaEnabled: obj.hasMfaEnabled,
-                    canCreateOrgs: obj.canCreateOrgs,
+                    userId: decodedUser.userId,
+                    email: decodedUser.email,
+                    firstName: decodedUser.firstName,
+                    lastName: decodedUser.lastName,
+                    username: decodedUser.username,
+                    legacyUserId: decodedUser.legacyUserId,
+                    impersonatorUserId: decodedUser.impersonatorUserId,
+                    properties: decodedUser.properties,
+                    hasPassword: decodedUser.hasPassword,
+                    hasMfaEnabled: decodedUser.hasMfaEnabled,
+                    canCreateOrgs: decodedUser.canCreateOrgs,
+                    activeOrgId,
                 },
                 orgIdToUserOrgInfo
             )
@@ -314,6 +340,7 @@ export type InternalOrgMemberInfo = {
 export type InternalUser = {
     user_id: string
     org_id_to_org_member_info?: { [org_id: string]: InternalOrgMemberInfo }
+    org_member_info?: InternalOrgMemberInfo // This will only be defined when  Active Org is enabled.
 
     email: string
     first_name?: string
@@ -345,9 +372,22 @@ export function toUser(snake_case: InternalUser): User {
         hasPassword: snake_case.has_password,
         hasMfaEnabled: snake_case.has_mfa_enabled,
         canCreateOrgs: snake_case.can_create_orgs,
+        orgMemberInfo: snake_case.org_member_info ? toOrgMemberInfo(snake_case.org_member_info) : undefined,
     }
 
     return camelCase
+}
+
+export function toOrgMemberInfo(snake_case: InternalOrgMemberInfo): OrgMemberInfo {
+    return new OrgMemberInfo(
+        snake_case.org_id,
+        snake_case.org_name,
+        snake_case.org_metadata,
+        snake_case.url_safe_org_name,
+        snake_case.user_role,
+        snake_case.inherited_user_roles_plus_current_role,
+        snake_case.user_permissions
+    )
 }
 
 export function toOrgIdToOrgMemberInfo(snake_case?: {
@@ -361,15 +401,7 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
     for (const key of Object.keys(snake_case)) {
         const snakeCaseValue = snake_case[key]
         if (snakeCaseValue) {
-            camelCase[key] = new OrgMemberInfo(
-                snakeCaseValue.org_id,
-                snakeCaseValue.org_name,
-                snakeCaseValue.org_metadata,
-                snakeCaseValue.url_safe_org_name,
-                snakeCaseValue.user_role,
-                snakeCaseValue.inherited_user_roles_plus_current_role,
-                snakeCaseValue.user_permissions
-            )
+            camelCase[key] = toOrgMemberInfo(snakeCaseValue)
         }
     }
 

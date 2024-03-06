@@ -7,6 +7,8 @@ const ENDPOINT_PATH = "/api/backend/v1/access_token"
 export type CreateAccessTokenRequest = {
     userId: string
     durationInMinutes: number
+    activeOrgId?: string
+    withActiveOrgSupport?: boolean
 }
 
 export type AccessToken = {
@@ -14,7 +16,7 @@ export type AccessToken = {
 }
 
 // POST
-export function createAccessToken(
+export async function createAccessToken(
     authUrl: URL,
     integrationApiKey: string,
     createAccessTokenRequest: CreateAccessTokenRequest
@@ -23,25 +25,27 @@ export function createAccessToken(
         throw new UserNotFoundException()
     }
 
-    const request = {
+    const request: Record<string, any> = {
         user_id: createAccessTokenRequest.userId,
         duration_in_minutes: createAccessTokenRequest.durationInMinutes,
+        with_active_org_support: createAccessTokenRequest.withActiveOrgSupport ?? false,
     }
-    return httpRequest(authUrl, integrationApiKey, ENDPOINT_PATH, "POST", JSON.stringify(request)).then(
-        (httpResponse) => {
-            if (httpResponse.statusCode === 401) {
-                throw new Error("integrationApiKey is incorrect")
-            } else if (httpResponse.statusCode === 400) {
-                throw new AccessTokenCreationException(httpResponse.response)
-            } else if (httpResponse.statusCode === 403) {
-                throw new UserNotFoundException()
-            } else if (httpResponse.statusCode === 404) {
-                throw new Error("Access token creation is not enabled")
-            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
-                throw new Error("Unknown error when creating access token")
-            }
+    if (createAccessTokenRequest.activeOrgId) {
+        request["active_org_id"] = createAccessTokenRequest.activeOrgId
+    }
 
-            return JSON.parse(httpResponse.response)
-        }
-    )
+    const httpResponse = await httpRequest(authUrl, integrationApiKey, ENDPOINT_PATH, "POST", JSON.stringify(request))
+    if (httpResponse.statusCode === 401) {
+        throw new Error("integrationApiKey is incorrect")
+    } else if (httpResponse.statusCode === 400) {
+        throw new AccessTokenCreationException(httpResponse.response)
+    } else if (httpResponse.statusCode === 403) {
+        throw new UserNotFoundException()
+    } else if (httpResponse.statusCode === 404) {
+        throw new Error("Access token creation is not enabled")
+    } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+        throw new Error("Unknown error when creating access token")
+    }
+
+    return JSON.parse(httpResponse.response)
 }
