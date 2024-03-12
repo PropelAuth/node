@@ -1,3 +1,5 @@
+import { InternalLoginMethod, LoginMethod, toLoginMethod } from "./loginMethod"
+
 export type UserProperties = { [key: string]: unknown }
 
 export type User = {
@@ -11,6 +13,7 @@ export type User = {
     impersonatorUserId?: string
     metadata?: { [key: string]: any }
     properties?: UserProperties
+    loginMethod: LoginMethod
 }
 
 export class UserClass {
@@ -23,6 +26,7 @@ export class UserClass {
     public lastName?: string
     public username?: string
     public properties?: UserProperties
+    public loginMethod: LoginMethod
 
     // If you used our migration APIs to migrate this user from a different system,
     // this is their original ID from that system.
@@ -41,6 +45,7 @@ export class UserClass {
         this.legacyUserId = user.legacyUserId
         this.impersonatorUserId = user.impersonatorUserId
         this.properties = user.properties
+        this.loginMethod = user.loginMethod
     }
 
     public getOrg(orgId: string): OrgMemberInfo | undefined {
@@ -292,6 +297,7 @@ export type InternalUser = {
     username?: string
     metadata?: { [key: string]: any }
     properties?: { [key: string]: unknown }
+    login_method?: InternalLoginMethod
 
     // If you used our migration APIs to migrate this user from a different system, this is their original ID from that system.
     legacy_user_id?: string
@@ -310,6 +316,7 @@ export function toUser(snake_case: InternalUser): User {
         impersonatorUserId: snake_case.impersonator_user_id,
         metadata: snake_case.metadata,
         properties: snake_case.properties,
+        loginMethod: toLoginMethod(snake_case.login_method),
     }
 
     return camelCase
