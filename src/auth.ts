@@ -104,22 +104,30 @@ export type BaseAuthOptions = {
 
 interface TokenVerificationMetadataWithPublicKey {
     tokenVerificationMetadata: TokenVerificationMetadata
-    publicKeyPromise: Promise<jose.KeyLike>
+    publicKey: jose.KeyLike
 }
 
 const getPublicKeyTokenVerificationMetadataPromise = async (
     tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>
-): Promise<TokenVerificationMetadataWithPublicKey | undefined> => {
+): Promise<TokenVerificationMetadataWithPublicKey> => {
     const tokenVerificationMetadata = await tokenVerificationMetadataPromise
 
     if (!tokenVerificationMetadata) {
-        return undefined
+        const errorMessage = "Auth library not initialized, rejecting request. This is likely a bad API key"
+        console.error(errorMessage)
+        throw new UnexpectedException(errorMessage)
     }
 
-    const publicKeyPromise = jose.importSPKI(tokenVerificationMetadata.verifierKey, "RS256")
-    return {
-        publicKeyPromise,
-        tokenVerificationMetadata,
+    try {
+        const publicKey = await jose.importSPKI(tokenVerificationMetadata.verifierKey, "RS256")
+        return {
+            publicKey,
+            tokenVerificationMetadata,
+        }
+    } catch (e) {
+        const publicKeyErrorMessage = "Error initializing auth library. Unable to import public key"
+        console.error(publicKeyErrorMessage)
+        throw new UnexpectedException(publicKeyErrorMessage)
     }
 }
 
@@ -430,7 +438,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
 
 // wrapper function with no validation
 function wrapValidateAccessTokenAndGetUser(
-    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey>
 ) {
     return async function validateAccessTokenAndGetUser(authorizationHeader?: string): Promise<User> {
         return extractAndVerifyBearerToken(tokenVerificationMetadataWithPublicKeyPromise, authorizationHeader)
@@ -441,7 +449,7 @@ function wrapValidateAccessTokenAndGetUser(
 // Each function returns an OrgMemberInfo object
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfo(
-    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
@@ -457,7 +465,7 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfo(
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfoWithMinimumRole(
-    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
@@ -474,7 +482,7 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithMinimumRole(
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfoWithExactRole(
-    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
@@ -491,7 +499,7 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithExactRole(
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfoWithPermission(
-    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
@@ -508,7 +516,7 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithPermission(
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(
-    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
@@ -649,30 +657,12 @@ function orgNameMatches(orgName: string, orgMemberInfo: OrgMemberInfo) {
 }
 
 async function extractAndVerifyBearerToken(
-    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>,
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey>,
     authorizationHeader: string | undefined
 ) {
     const tokenVerificationMetadataWithPublicKey = await tokenVerificationMetadataWithPublicKeyPromise
-    if (!tokenVerificationMetadataWithPublicKey) {
-        const errorMessage = "Auth library not initialized, rejecting request. This is likely a bad API key"
-        console.error(errorMessage)
-        throw new UnexpectedException(errorMessage)
-    }
 
-    const { publicKeyPromise, tokenVerificationMetadata } = tokenVerificationMetadataWithPublicKey
-
-    let publicKey: jose.KeyLike | undefined
-
-    try {
-        publicKey = await publicKeyPromise
-    } catch (e) {
-        const publicKeyErrorMessage = "Error initializing auth library. Unable to import public key"
-        console.error(publicKeyErrorMessage)
-        throw new UnexpectedException(publicKeyErrorMessage)
-    }
-    if (!publicKey) {
-        throw new UnexpectedException("Error initializing auth library. Public key is undefined.")
-    }
+    const { publicKey, tokenVerificationMetadata } = tokenVerificationMetadataWithPublicKey
 
     const bearerToken = extractBearerToken(authorizationHeader)
     return verifyToken(bearerToken, tokenVerificationMetadata, publicKey)
