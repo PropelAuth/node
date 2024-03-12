@@ -9,11 +9,7 @@ export type User = {
     username?: string
     legacyUserId?: string
     impersonatorUserId?: string
-    metadata?: { [key: string]: any }
     properties?: UserProperties
-    hasPassword?: boolean
-    hasMfaEnabled?: boolean
-    canCreateOrgs?: boolean
 }
 
 export class UserClass {
@@ -26,9 +22,6 @@ export class UserClass {
     public lastName?: string
     public username?: string
     public properties?: UserProperties
-    public hasPassword?: boolean
-    public hasMfaEnabled?: boolean
-    public canCreateOrgs?: boolean
 
     // If you used our migration APIs to migrate this user from a different system,
     // this is their original ID from that system.
@@ -43,9 +36,6 @@ export class UserClass {
         this.firstName = userFields.firstName
         this.lastName = userFields.lastName
         this.username = userFields.username
-        this.hasPassword = userFields.hasPassword
-        this.hasMfaEnabled = userFields.hasMfaEnabled
-        this.canCreateOrgs = userFields.canCreateOrgs
 
         this.legacyUserId = userFields.legacyUserId
         this.impersonatorUserId = userFields.impersonatorUserId
@@ -149,9 +139,6 @@ export class UserClass {
                     legacyUserId: obj.legacyUserId,
                     impersonatorUserId: obj.impersonatorUserId,
                     properties: obj.properties,
-                    hasPassword: obj.hasPassword,
-                    hasMfaEnabled: obj.hasMfaEnabled,
-                    canCreateOrgs: obj.canCreateOrgs,
                 },
                 orgIdToUserOrgInfo
             )
@@ -311,6 +298,7 @@ export type InternalOrgMemberInfo = {
     user_permissions: string[]
 }
 
+// This type is used to represent the user returned from the refresh token.
 export type InternalUser = {
     user_id: string
     org_id_to_org_member_info?: { [org_id: string]: InternalOrgMemberInfo }
@@ -319,15 +307,11 @@ export type InternalUser = {
     first_name?: string
     last_name?: string
     username?: string
-    has_password?: boolean
-    has_mfa_enabled?: boolean
-    can_create_orgs?: boolean
+    properties?: { [key: string]: unknown }
 
     // If you used our migration APIs to migrate this user from a different system, this is their original ID from that system.
     legacy_user_id?: string
     impersonator_user_id?: string
-    metadata?: { [key: string]: any }
-    properties?: { [key: string]: unknown }
 }
 
 export function toUser(snake_case: InternalUser): User {
@@ -340,11 +324,7 @@ export function toUser(snake_case: InternalUser): User {
         username: snake_case.username,
         legacyUserId: snake_case.legacy_user_id,
         impersonatorUserId: snake_case.impersonator_user_id,
-        metadata: snake_case.metadata,
         properties: snake_case.properties,
-        hasPassword: snake_case.has_password,
-        hasMfaEnabled: snake_case.has_mfa_enabled,
-        canCreateOrgs: snake_case.can_create_orgs,
     }
 
     return camelCase

@@ -277,9 +277,6 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole get user and org f
         org_id_to_org_member_info: {
             [orgMemberInfo.org_id]: orgMemberInfo,
         },
-        metadata: {
-            userdata: "uservalue",
-        },
     }
     const orgInfo: RequiredOrgInfo = {
         orgId: orgMemberInfo.org_id,
