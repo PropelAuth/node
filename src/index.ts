@@ -52,5 +52,6 @@ export {
     toUser,
     User,
     UserAndOrgMemberInfo,
+    UserClass,
     UserMetadata,
 } from "./user"

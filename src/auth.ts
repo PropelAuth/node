@@ -1,4 +1,4 @@
-import jwt, { VerifyOptions } from "jsonwebtoken"
+import * as jose from "jose"
 import { AccessToken, createAccessToken, CreateAccessTokenRequest } from "./api/accessToken"
 import {
     ApiKeysCreateRequest,
@@ -509,9 +509,7 @@ function validateOrgAccessAndGetOrgMemberInfoWithMinimumRole(
     }
 
     if (!orgMemberInfo.isAtLeastRole(minimumRole)) {
-        throw new ForbiddenException(
-            `User's roles (${orgMemberInfo.inheritedRolesPlusCurrentRole}) don't contain the minimum role (${minimumRole})`
-        )
+        throw new ForbiddenException(`User's roles don't contain the minimum role (${minimumRole})`)
     }
 
     return orgMemberInfo
@@ -528,9 +526,7 @@ function validateOrgAccessAndGetOrgMemberInfoWithExactRole(
     }
 
     if (!orgMemberInfo.isRole(exactRole)) {
-        throw new ForbiddenException(
-            `User's assigned role (${orgMemberInfo.assignedRole}) isn't the required role (${exactRole})`
-        )
+        throw new ForbiddenException(`User's assigned role isn't the required role (${exactRole})`)
     }
 
     return orgMemberInfo
@@ -547,9 +543,7 @@ function validateOrgAccessAndGetOrgMemberInfoWithPermission(
     }
 
     if (!orgMemberInfo.hasPermission(permission)) {
-        throw new ForbiddenException(
-            `User's permissions (${orgMemberInfo.permissions}) don't contain the required permission (${permission})`
-        )
+        throw new ForbiddenException(`User's permissions don't contain the required permission (${permission})`)
     }
 
     return orgMemberInfo
@@ -566,9 +560,7 @@ function validateOrgAccessAndGetOrgMemberInfoWithAllPermissions(
     }
 
     if (!orgMemberInfo.hasAllPermissions(permissions)) {
-        throw new ForbiddenException(
-            `User's permissions (${orgMemberInfo.permissions}) don't contain all the required permissions (${permissions})`
-        )
+        throw new ForbiddenException(`User's permissions don't contain all the required permissions (${permissions})`)
     }
 
     return orgMemberInfo
@@ -636,14 +628,20 @@ function extractBearerToken(authHeader?: string): string {
     return authHeaderParts[1]
 }
 
-function verifyToken(bearerToken: string, tokenVerificationMetadata: TokenVerificationMetadata): User {
-    const options: VerifyOptions = {
-        algorithms: ["RS256"],
-        issuer: tokenVerificationMetadata.issuer,
+async function verifyToken(bearerToken: string, tokenVerificationMetadata: TokenVerificationMetadata): Promise<User> {
+    let publicKey
+    try {
+        publicKey = await jose.importSPKI(tokenVerificationMetadata.verifierKey, "RS256")
+    } catch (err) {
+        console.error("Verifier key is invalid. Make sure it's specified correctly, including the newlines.", err)
+        throw new UnexpectedException("Invalid verifier key")
     }
     try {
-        const decoded = jwt.verify(bearerToken, tokenVerificationMetadata.verifierKey, options)
-        return toUser(<InternalUser>decoded)
+        const { payload } = await jose.jwtVerify(bearerToken, publicKey, {
+            algorithms: ["RS256"],
+            issuer: tokenVerificationMetadata.issuer,
+        })
+        return toUser(<InternalUser>payload)
     } catch (e: unknown) {
         if (e instanceof Error) {
             throw new UnauthorizedException(e.message)
