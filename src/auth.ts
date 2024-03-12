@@ -102,13 +102,25 @@ export type BaseAuthOptions = {
     manualTokenVerificationMetadata?: TokenVerificationMetadata
 }
 
-const getPublicKeyPromise = (
-    manualTokenVerificationMetadata?: TokenVerificationMetadata
-): Promise<jose.KeyLike> | undefined => {
-    if (manualTokenVerificationMetadata) {
-        return jose.importSPKI(manualTokenVerificationMetadata.verifierKey, "RS256")
+interface TokenVerificationMetadataWithPublicKey {
+    tokenVerificationMetadata: TokenVerificationMetadata
+    publicKeyPromise: Promise<jose.KeyLike>
+}
+
+const getPublicKeyTokenVerificationMetadataPromise = async (
+    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>
+): Promise<TokenVerificationMetadataWithPublicKey | undefined> => {
+    const tokenVerificationMetadata = await tokenVerificationMetadataPromise
+
+    if (!tokenVerificationMetadata) {
+        return undefined
     }
-    return undefined
+
+    const publicKeyPromise = jose.importSPKI(tokenVerificationMetadata.verifierKey, "RS256")
+    return {
+        publicKeyPromise,
+        tokenVerificationMetadata,
+    }
 }
 
 export function initBaseAuth(opts: BaseAuthOptions) {
@@ -121,27 +133,25 @@ export function initBaseAuth(opts: BaseAuthOptions) {
     ).catch((err) => {
         console.error("Error initializing auth library. ", err)
     })
-    const publicKeyPromise = getPublicKeyPromise(opts.manualTokenVerificationMetadata)
+
+    const tokenVerificationMetadataWithPublicKeyPromise = getPublicKeyTokenVerificationMetadataPromise(
+        tokenVerificationMetadataPromise
+    )
 
     const validateAccessTokenAndGetUser = wrapValidateAccessTokenAndGetUser(
-        tokenVerificationMetadataPromise,
-        publicKeyPromise
+        tokenVerificationMetadataWithPublicKeyPromise
     )
     const validateAccessTokenAndGetUserWithOrgInfo = wrapValidateAccessTokenAndGetUserWithOrgInfo(
-        tokenVerificationMetadataPromise,
-        publicKeyPromise
+        tokenVerificationMetadataWithPublicKeyPromise
     )
     const validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole =
-        wrapValidateAccessTokenAndGetUserWithOrgInfoWithMinimumRole(tokenVerificationMetadataPromise, publicKeyPromise)
+        wrapValidateAccessTokenAndGetUserWithOrgInfoWithMinimumRole(tokenVerificationMetadataWithPublicKeyPromise)
     const validateAccessTokenAndGetUserWithOrgInfoWithExactRole =
-        wrapValidateAccessTokenAndGetUserWithOrgInfoWithExactRole(tokenVerificationMetadataPromise, publicKeyPromise)
+        wrapValidateAccessTokenAndGetUserWithOrgInfoWithExactRole(tokenVerificationMetadataWithPublicKeyPromise)
     const validateAccessTokenAndGetUserWithOrgInfoWithPermission =
-        wrapValidateAccessTokenAndGetUserWithOrgInfoWithPermission(tokenVerificationMetadataPromise, publicKeyPromise)
+        wrapValidateAccessTokenAndGetUserWithOrgInfoWithPermission(tokenVerificationMetadataWithPublicKeyPromise)
     const validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions =
-        wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(
-            tokenVerificationMetadataPromise,
-            publicKeyPromise
-        )
+        wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(tokenVerificationMetadataWithPublicKeyPromise)
 
     function fetchUserMetadataByUserId(userId: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
         return fetchUserMetadataByUserIdWithIdCheck(authUrl, integrationApiKey, userId, includeOrgs)
@@ -420,11 +430,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
 
 // wrapper function with no validation
 function wrapValidateAccessTokenAndGetUser(
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>,
-    publicKeyPromise?: Promise<jose.KeyLike>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
 ) {
     return async function validateAccessTokenAndGetUser(authorizationHeader?: string): Promise<User> {
-        return extractAndVerifyBearerToken(tokenVerificationMetadataPromise, authorizationHeader, publicKeyPromise)
+        return extractAndVerifyBearerToken(tokenVerificationMetadataWithPublicKeyPromise, authorizationHeader)
     }
 }
 
@@ -432,17 +441,15 @@ function wrapValidateAccessTokenAndGetUser(
 // Each function returns an OrgMemberInfo object
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfo(
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>,
-    publicKeyPromise?: Promise<jose.KeyLike>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
         requiredOrgInfo: RequiredOrgInfo
     ): Promise<UserAndOrgMemberInfo> {
         const user = await extractAndVerifyBearerToken(
-            tokenVerificationMetadataPromise,
-            authorizationHeader,
-            publicKeyPromise
+            tokenVerificationMetadataWithPublicKeyPromise,
+            authorizationHeader
         )
         const orgMemberInfo = validateOrgAccessAndGetOrgMemberInfo(user, requiredOrgInfo)
         return { user, orgMemberInfo }
@@ -450,8 +457,7 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfo(
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfoWithMinimumRole(
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>,
-    publicKeyPromise?: Promise<jose.KeyLike>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
@@ -459,9 +465,8 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithMinimumRole(
         minimumRole: string
     ): Promise<UserAndOrgMemberInfo> {
         const user = await extractAndVerifyBearerToken(
-            tokenVerificationMetadataPromise,
-            authorizationHeader,
-            publicKeyPromise
+            tokenVerificationMetadataWithPublicKeyPromise,
+            authorizationHeader
         )
         const orgMemberInfo = validateOrgAccessAndGetOrgMemberInfoWithMinimumRole(user, requiredOrgInfo, minimumRole)
         return { user, orgMemberInfo }
@@ -469,8 +474,7 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithMinimumRole(
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfoWithExactRole(
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>,
-    publicKeyPromise?: Promise<jose.KeyLike>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
@@ -478,9 +482,8 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithExactRole(
         exactRole: string
     ): Promise<UserAndOrgMemberInfo> {
         const user = await extractAndVerifyBearerToken(
-            tokenVerificationMetadataPromise,
-            authorizationHeader,
-            publicKeyPromise
+            tokenVerificationMetadataWithPublicKeyPromise,
+            authorizationHeader
         )
         const orgMemberInfo = validateOrgAccessAndGetOrgMemberInfoWithExactRole(user, requiredOrgInfo, exactRole)
         return { user, orgMemberInfo }
@@ -488,8 +491,7 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithExactRole(
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfoWithPermission(
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>,
-    publicKeyPromise?: Promise<jose.KeyLike>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
@@ -497,9 +499,8 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithPermission(
         permission: string
     ): Promise<UserAndOrgMemberInfo> {
         const user = await extractAndVerifyBearerToken(
-            tokenVerificationMetadataPromise,
-            authorizationHeader,
-            publicKeyPromise
+            tokenVerificationMetadataWithPublicKeyPromise,
+            authorizationHeader
         )
         const orgMemberInfo = validateOrgAccessAndGetOrgMemberInfoWithPermission(user, requiredOrgInfo, permission)
         return { user, orgMemberInfo }
@@ -507,8 +508,7 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithPermission(
 }
 
 function wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>,
-    publicKeyPromise?: Promise<jose.KeyLike>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
 ) {
     return async function validateAccessTokenAndGetUserWithOrgInfo(
         authorizationHeader: string | undefined,
@@ -516,9 +516,8 @@ function wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(
         permissions: string[]
     ): Promise<UserAndOrgMemberInfo> {
         const user = await extractAndVerifyBearerToken(
-            tokenVerificationMetadataPromise,
-            authorizationHeader,
-            publicKeyPromise
+            tokenVerificationMetadataWithPublicKeyPromise,
+            authorizationHeader
         )
         const orgMemberInfo = validateOrgAccessAndGetOrgMemberInfoWithAllPermissions(user, requiredOrgInfo, permissions)
         return { user, orgMemberInfo }
@@ -650,13 +649,25 @@ function orgNameMatches(orgName: string, orgMemberInfo: OrgMemberInfo) {
 }
 
 async function extractAndVerifyBearerToken(
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>,
-    authorizationHeader: string | undefined,
-    publicKeyPromise?: Promise<jose.KeyLike>
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>,
+    authorizationHeader: string | undefined
 ) {
-    const tokenVerificationMetadata = await getTokenVerificationMetadata(tokenVerificationMetadataPromise)
+    const tokenVerificationMetadataWithPublicKey = await tokenVerificationMetadataWithPublicKeyPromise
+    if (!tokenVerificationMetadataWithPublicKey) {
+        const errorMessage = "Auth library not initialized, rejecting request. This is likely a bad API key"
+        console.error(errorMessage)
+        throw new UnexpectedException(errorMessage)
+    }
+
+    const { publicKeyPromise, tokenVerificationMetadata } = tokenVerificationMetadataWithPublicKey
+
+    const publicKey = await publicKeyPromise
+    if (!publicKey) {
+        throw new UnexpectedException("Error initializing auth library. Public key is undefined.")
+    }
+
     const bearerToken = extractBearerToken(authorizationHeader)
-    return verifyToken(bearerToken, tokenVerificationMetadata, publicKeyPromise)
+    return verifyToken(bearerToken, tokenVerificationMetadata, publicKey)
 }
 
 function extractBearerToken(authHeader?: string): string {
@@ -675,20 +686,8 @@ function extractBearerToken(authHeader?: string): string {
 async function verifyToken(
     bearerToken: string,
     tokenVerificationMetadata: TokenVerificationMetadata,
-    publicKeyPromise?: Promise<jose.KeyLike>
+    publicKey: jose.KeyLike
 ): Promise<User> {
-    let publicKey: jose.KeyLike
-    if (publicKeyPromise) {
-        publicKey = await publicKeyPromise
-    } else {
-        try {
-            publicKey = await jose.importSPKI(tokenVerificationMetadata.verifierKey, "RS256")
-        } catch (err) {
-            console.error("Verifier key is invalid. Make sure it's specified correctly, including the newlines.", err)
-            throw new UnexpectedException("Invalid verifier key")
-        }
-    }
-
     try {
         const { payload } = await jose.jwtVerify(bearerToken, publicKey, {
             algorithms: ["RS256"],
@@ -705,7 +704,7 @@ async function verifyToken(
 }
 
 async function getTokenVerificationMetadata(
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>
+    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
 ) {
     const tokenVerificationMetadata = await tokenVerificationMetadataPromise
     // If we were unable to fetch the token verification metadata, reject all requests
