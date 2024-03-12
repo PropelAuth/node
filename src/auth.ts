@@ -661,7 +661,15 @@ async function extractAndVerifyBearerToken(
 
     const { publicKeyPromise, tokenVerificationMetadata } = tokenVerificationMetadataWithPublicKey
 
-    const publicKey = await publicKeyPromise
+    let publicKey: jose.KeyLike | undefined
+
+    try {
+        publicKey = await publicKeyPromise
+    } catch (e) {
+        const publicKeyErrorMessage = "Error initializing auth library. Unable to import public key"
+        console.error(publicKeyErrorMessage)
+        throw new UnexpectedException(publicKeyErrorMessage)
+    }
     if (!publicKey) {
         throw new UnexpectedException("Error initializing auth library. Public key is undefined.")
     }
@@ -701,20 +709,6 @@ async function verifyToken(
             throw new UnauthorizedException("Unable to decode jwt")
         }
     }
-}
-
-async function getTokenVerificationMetadata(
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadataWithPublicKey | undefined>
-) {
-    const tokenVerificationMetadata = await tokenVerificationMetadataPromise
-    // If we were unable to fetch the token verification metadata, reject all requests
-    if (!tokenVerificationMetadata) {
-        const errorMessage = "Auth library not initialized, rejecting request. This is likely a bad API key"
-        console.error(errorMessage)
-        throw new UnexpectedException(errorMessage)
-    }
-
-    return tokenVerificationMetadata
 }
 
 export type HandleErrorOptions = {
