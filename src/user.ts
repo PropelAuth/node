@@ -47,6 +47,10 @@ export class UserClass {
             return undefined
         }
 
+        if (!this.orgIdToUserOrgInfo.hasOwnProperty(orgId)) {
+            return undefined
+        }
+
         return this.orgIdToUserOrgInfo[orgId]
     }
 
@@ -57,7 +61,7 @@ export class UserClass {
 
         const urlSafeOrgName = orgName.toLowerCase().replace(/ /g, "-")
         for (const orgId in this.orgIdToUserOrgInfo) {
-            const orgMemberInfo = this.orgIdToUserOrgInfo[orgId]
+            const orgMemberInfo = this.getOrg(orgId)
             if (orgMemberInfo?.urlSafeOrgName === urlSafeOrgName) {
                 return orgMemberInfo
             }
