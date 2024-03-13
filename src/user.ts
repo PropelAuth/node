@@ -11,9 +11,6 @@ export type User = {
     impersonatorUserId?: string
     metadata?: { [key: string]: any }
     properties?: UserProperties
-    hasPassword?: boolean
-    hasMfaEnabled?: boolean
-    canCreateOrgs?: boolean
 }
 
 export class UserClass {
@@ -26,34 +23,32 @@ export class UserClass {
     public lastName?: string
     public username?: string
     public properties?: UserProperties
-    public hasPassword?: boolean
-    public hasMfaEnabled?: boolean
-    public canCreateOrgs?: boolean
 
     // If you used our migration APIs to migrate this user from a different system,
     // this is their original ID from that system.
     public legacyUserId?: string
     public impersonatorUserId?: string
 
-    constructor(userFields: User, orgIdToUserOrgInfo?: { [orgId: string]: OrgMemberInfo }) {
-        this.userId = userFields.userId
-        this.orgIdToUserOrgInfo = orgIdToUserOrgInfo
+    constructor(user: User) {
+        this.userId = user.userId
+        this.orgIdToUserOrgInfo = user.orgIdToOrgMemberInfo
 
-        this.email = userFields.email
-        this.firstName = userFields.firstName
-        this.lastName = userFields.lastName
-        this.username = userFields.username
-        this.hasPassword = userFields.hasPassword
-        this.hasMfaEnabled = userFields.hasMfaEnabled
-        this.canCreateOrgs = userFields.canCreateOrgs
+        this.email = user.email
+        this.firstName = user.firstName
+        this.lastName = user.lastName
+        this.username = user.username
 
-        this.legacyUserId = userFields.legacyUserId
-        this.impersonatorUserId = userFields.impersonatorUserId
-        this.properties = userFields.properties
+        this.legacyUserId = user.legacyUserId
+        this.impersonatorUserId = user.impersonatorUserId
+        this.properties = user.properties
     }
 
     public getOrg(orgId: string): OrgMemberInfo | undefined {
         if (!this.orgIdToUserOrgInfo) {
+            return undefined
+        }
+
+        if (!this.orgIdToUserOrgInfo.hasOwnProperty(orgId)) {
             return undefined
         }
 
@@ -67,7 +62,7 @@ export class UserClass {
 
         const urlSafeOrgName = orgName.toLowerCase().replace(/ /g, "-")
         for (const orgId in this.orgIdToUserOrgInfo) {
-            const orgMemberInfo = this.orgIdToUserOrgInfo[orgId]
+            const orgMemberInfo = this.getOrg(orgId)
             if (orgMemberInfo?.urlSafeOrgName === urlSafeOrgName) {
                 return orgMemberInfo
             }
@@ -77,7 +72,7 @@ export class UserClass {
     }
 
     public getUserProperty(key: string): unknown | undefined {
-        if (!this.properties) {
+        if (!this.properties || !this.properties.hasOwnProperty(key)) {
             return undefined
         }
 
@@ -132,33 +127,8 @@ export class UserClass {
         return orgMemberInfo.hasAllPermissions(permissions)
     }
 
-    public static fromJSON(json: string): UserClass {
-        const obj: User = JSON.parse(json)
-        const orgIdToUserOrgInfo: { [orgId: string]: OrgMemberInfo } = {}
-        for (const orgId in obj.orgIdToOrgMemberInfo) {
-            orgIdToUserOrgInfo[orgId] = OrgMemberInfo.fromJSON(JSON.stringify(obj.orgIdToOrgMemberInfo[orgId]))
-        }
-        try {
-            return new UserClass(
-                {
-                    userId: obj.userId,
-                    email: obj.email,
-                    firstName: obj.firstName,
-                    lastName: obj.lastName,
-                    username: obj.username,
-                    legacyUserId: obj.legacyUserId,
-                    impersonatorUserId: obj.impersonatorUserId,
-                    properties: obj.properties,
-                    hasPassword: obj.hasPassword,
-                    hasMfaEnabled: obj.hasMfaEnabled,
-                    canCreateOrgs: obj.canCreateOrgs,
-                },
-                orgIdToUserOrgInfo
-            )
-        } catch (e) {
-            console.error("Unable to parse User. Make sure the JSON string is a stringified `UserClass` type.", e)
-            throw e
-        }
+    public static fromUser(user: User): UserClass {
+        return new UserClass(user)
     }
 }
 
@@ -311,6 +281,7 @@ export type InternalOrgMemberInfo = {
     user_permissions: string[]
 }
 
+// This type is used to represent the user returned from the refresh token.
 export type InternalUser = {
     user_id: string
     org_id_to_org_member_info?: { [org_id: string]: InternalOrgMemberInfo }
@@ -319,15 +290,12 @@ export type InternalUser = {
     first_name?: string
     last_name?: string
     username?: string
-    has_password?: boolean
-    has_mfa_enabled?: boolean
-    can_create_orgs?: boolean
+    metadata?: { [key: string]: any }
+    properties?: { [key: string]: unknown }
 
     // If you used our migration APIs to migrate this user from a different system, this is their original ID from that system.
     legacy_user_id?: string
     impersonator_user_id?: string
-    metadata?: { [key: string]: any }
-    properties?: { [key: string]: unknown }
 }
 
 export function toUser(snake_case: InternalUser): User {
@@ -342,9 +310,6 @@ export function toUser(snake_case: InternalUser): User {
         impersonatorUserId: snake_case.impersonator_user_id,
         metadata: snake_case.metadata,
         properties: snake_case.properties,
-        hasPassword: snake_case.has_password,
-        hasMfaEnabled: snake_case.has_mfa_enabled,
-        canCreateOrgs: snake_case.can_create_orgs,
     }
 
     return camelCase
