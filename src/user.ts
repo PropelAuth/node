@@ -29,18 +29,18 @@ export class UserClass {
     public legacyUserId?: string
     public impersonatorUserId?: string
 
-    constructor(userFields: User, orgIdToUserOrgInfo?: { [orgId: string]: OrgMemberInfo }) {
-        this.userId = userFields.userId
-        this.orgIdToUserOrgInfo = orgIdToUserOrgInfo
+    constructor(user: User) {
+        this.userId = user.userId
+        this.orgIdToUserOrgInfo = user.orgIdToOrgMemberInfo
 
-        this.email = userFields.email
-        this.firstName = userFields.firstName
-        this.lastName = userFields.lastName
-        this.username = userFields.username
+        this.email = user.email
+        this.firstName = user.firstName
+        this.lastName = user.lastName
+        this.username = user.username
 
-        this.legacyUserId = userFields.legacyUserId
-        this.impersonatorUserId = userFields.impersonatorUserId
-        this.properties = userFields.properties
+        this.legacyUserId = user.legacyUserId
+        this.impersonatorUserId = user.impersonatorUserId
+        this.properties = user.properties
     }
 
     public getOrg(orgId: string): OrgMemberInfo | undefined {
@@ -127,30 +127,8 @@ export class UserClass {
         return orgMemberInfo.hasAllPermissions(permissions)
     }
 
-    public static fromJSON(json: string): UserClass {
-        const obj: User = JSON.parse(json)
-        const orgIdToUserOrgInfo: { [orgId: string]: OrgMemberInfo } = {}
-        for (const orgId in obj.orgIdToOrgMemberInfo) {
-            orgIdToUserOrgInfo[orgId] = OrgMemberInfo.fromJSON(JSON.stringify(obj.orgIdToOrgMemberInfo[orgId]))
-        }
-        try {
-            return new UserClass(
-                {
-                    userId: obj.userId,
-                    email: obj.email,
-                    firstName: obj.firstName,
-                    lastName: obj.lastName,
-                    username: obj.username,
-                    legacyUserId: obj.legacyUserId,
-                    impersonatorUserId: obj.impersonatorUserId,
-                    properties: obj.properties,
-                },
-                orgIdToUserOrgInfo
-            )
-        } catch (e) {
-            console.error("Unable to parse User. Make sure the JSON string is a stringified `UserClass` type.", e)
-            throw e
-        }
+    public static fromUser(user: User): UserClass {
+        return new UserClass(user)
     }
 }
 
