@@ -40,6 +40,7 @@ export {
     UpdateUserMetadataException,
     UserNotFoundException,
 } from "./exceptions"
+export { LoginMethod, SamlLoginProvider, SocialLoginProvider } from "./loginMethod"
 export {
     CreatedOrg,
     CreatedUser,

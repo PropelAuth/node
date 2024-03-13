@@ -193,6 +193,7 @@ test("toUser converts correctly with orgs", async () => {
                 []
             ),
         },
+        loginMethod: { loginMethod: "unknown" },
     }
 
     expect(toUser(internalUser)).toEqual(user)
@@ -210,6 +211,25 @@ test("toUser converts correctly without orgs", async () => {
         email: "easteregg@propelauth.com",
         username: "easteregg",
         legacyUserId: "something",
+        loginMethod: { loginMethod: "unknown" },
+    }
+    expect(toUser(internalUser)).toEqual(user)
+})
+
+test("toUser converts login_method correctly", async () => {
+    const internalUser: InternalUser = {
+        user_id: "cbf064e2-edaa-4d35-b413-a8d857329c12",
+        email: "easteregg@propelauth.com",
+        username: "easteregg",
+        legacy_user_id: "something",
+        login_method: { login_method: "saml_sso", org_id: "someOrgId", provider: "Okta" },
+    }
+    const user: User = {
+        userId: "cbf064e2-edaa-4d35-b413-a8d857329c12",
+        email: "easteregg@propelauth.com",
+        username: "easteregg",
+        legacyUserId: "something",
+        loginMethod: { loginMethod: "saml_sso", orgId: "someOrgId", provider: "Okta" },
     }
     expect(toUser(internalUser)).toEqual(user)
 })
@@ -226,6 +246,7 @@ test("parseSnakeCaseToCamelCase converts correctly", async () => {
                 org_metadata: { orgdata_a: "orgvalue_a" },
             },
         },
+        login_method: { login_method: "password" },
     }
     const camelCase = {
         userId: "cbf064e2-edaa-4d35-b413-a8d857329c12",
@@ -238,6 +259,7 @@ test("parseSnakeCaseToCamelCase converts correctly", async () => {
                 orgMetadata: { orgdata_a: "orgvalue_a" },
             },
         },
+        loginMethod: { loginMethod: "password" },
     }
 
     expect(parseSnakeCaseToCamelCase(JSON.stringify(snakeCase))).toEqual(camelCase)
