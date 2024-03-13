@@ -33,7 +33,12 @@ import {
     updateOrg,
     UpdateOrgRequest,
 } from "./api/org"
-import { fetchTokenVerificationMetadata, TokenVerificationMetadata } from "./api/tokenVerificationMetadata"
+import {
+    fetchTokenVerificationMetadata,
+    getTokenVerificationMetadataPromise,
+    TokenVerificationMetadata,
+    TokenVerificationMetadataWithPublicKey,
+} from "./api/tokenVerificationMetadata"
 import {
     clearUserPassword,
     createUser,
@@ -63,7 +68,7 @@ import {
     UsersPagedResponse,
     UsersQuery,
 } from "./api/user"
-import { ForbiddenException, UnauthorizedException, UnexpectedException } from "./exceptions"
+import { ForbiddenException, UnauthorizedException } from "./exceptions"
 import {
     ApiKeyFull,
     ApiKeyNew,
@@ -102,38 +107,11 @@ export type BaseAuthOptions = {
     manualTokenVerificationMetadata?: TokenVerificationMetadata
 }
 
-interface TokenVerificationMetadataWithPublicKey {
-    tokenVerificationMetadata: TokenVerificationMetadata
-    publicKey: jose.KeyLike
-}
-
-const getPublicKeyTokenVerificationMetadataPromise = async (
-    tokenVerificationMetadataPromise: Promise<TokenVerificationMetadata | void>
-): Promise<TokenVerificationMetadataWithPublicKey> => {
-    const tokenVerificationMetadata = await tokenVerificationMetadataPromise
-
-    if (!tokenVerificationMetadata) {
-        const errorMessage = "Auth library not initialized, rejecting request. This is likely a bad API key"
-        console.error(errorMessage)
-        throw new UnexpectedException(errorMessage)
-    }
-
-    try {
-        const publicKey = await jose.importSPKI(tokenVerificationMetadata.verifierKey, "RS256")
-        return {
-            publicKey,
-            tokenVerificationMetadata,
-        }
-    } catch (e) {
-        const publicKeyErrorMessage = "Error initializing auth library. Unable to import public key"
-        console.error(publicKeyErrorMessage)
-        throw new UnexpectedException(publicKeyErrorMessage)
-    }
-}
-
 export function initBaseAuth(opts: BaseAuthOptions) {
     const authUrl: URL = validateAuthUrl(opts.authUrl)
     const integrationApiKey: string = opts.apiKey
+
+    // A promise that resolves to the token verification metadata, whether it's fetched or manually provided
     const tokenVerificationMetadataPromise = fetchTokenVerificationMetadata(
         authUrl,
         integrationApiKey,
@@ -142,7 +120,8 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         console.error("Error initializing auth library. ", err)
     })
 
-    const tokenVerificationMetadataWithPublicKeyPromise = getPublicKeyTokenVerificationMetadataPromise(
+    // A promise that resolves to the token verification metadata with the public key imported
+    const tokenVerificationMetadataWithPublicKeyPromise = getTokenVerificationMetadataPromise(
         tokenVerificationMetadataPromise
     )
 

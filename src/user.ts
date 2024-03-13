@@ -9,6 +9,7 @@ export type User = {
     username?: string
     legacyUserId?: string
     impersonatorUserId?: string
+    metadata?: { [key: string]: any }
     properties?: UserProperties
 }
 
@@ -71,7 +72,7 @@ export class UserClass {
     }
 
     public getUserProperty(key: string): unknown | undefined {
-        if (!this.properties) {
+        if (!this.properties || !this.properties.hasOwnProperty(key)) {
             return undefined
         }
 
@@ -311,6 +312,7 @@ export type InternalUser = {
     first_name?: string
     last_name?: string
     username?: string
+    metadata?: { [key: string]: any }
     properties?: { [key: string]: unknown }
 
     // If you used our migration APIs to migrate this user from a different system, this is their original ID from that system.
@@ -328,6 +330,7 @@ export function toUser(snake_case: InternalUser): User {
         username: snake_case.username,
         legacyUserId: snake_case.legacy_user_id,
         impersonatorUserId: snake_case.impersonator_user_id,
+        metadata: snake_case.metadata,
         properties: snake_case.properties,
     }
 
