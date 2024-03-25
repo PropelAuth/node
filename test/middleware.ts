@@ -199,6 +199,44 @@ test("toUser converts correctly with orgs", async () => {
     expect(toUser(internalUser)).toEqual(user)
 })
 
+test("toUser converts correctly with active org", async () => {
+    const internalUser: InternalUser = {
+        user_id: "cbf064e2-edaa-4d35-b413-a8d857329c12",
+        email: "easteregg@propelauth.com",
+        first_name: "easter",
+        org_member_info: {
+            org_id: "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
+            org_name: "orgA",
+            org_metadata: { orgdata_a: "orgvalue_a" },
+            url_safe_org_name: "orga",
+            user_role: "Owner",
+            inherited_user_roles_plus_current_role: ["Owner", "Admin", "Member"],
+            user_permissions: [],
+        },
+    }
+
+    const user: User = {
+        userId: "cbf064e2-edaa-4d35-b413-a8d857329c12",
+        email: "easteregg@propelauth.com",
+        firstName: "easter",
+        orgIdToOrgMemberInfo: {
+            "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a": new OrgMemberInfo(
+                "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
+                "orgA",
+                { orgdata_a: "orgvalue_a" },
+                "orga",
+                "Owner",
+                ["Owner", "Admin", "Member"],
+                []
+            ),
+        },
+        loginMethod: { loginMethod: "unknown" },
+        activeOrgId: "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
+    }
+
+    expect(toUser(internalUser)).toEqual(user)
+})
+
 test("toUser converts correctly without orgs", async () => {
     const internalUser: InternalUser = {
         user_id: "cbf064e2-edaa-4d35-b413-a8d857329c12",
