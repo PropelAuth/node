@@ -14,6 +14,7 @@ export type User = {
     metadata?: { [key: string]: any }
     properties?: UserProperties
     loginMethod: LoginMethod
+    activeOrgId?: string
 }
 
 export class UserClass {
@@ -27,6 +28,7 @@ export class UserClass {
     public username?: string
     public properties?: UserProperties
     public loginMethod: LoginMethod
+    public activeOrgId?: string
 
     // If you used our migration APIs to migrate this user from a different system,
     // this is their original ID from that system.
@@ -46,6 +48,18 @@ export class UserClass {
         this.impersonatorUserId = user.impersonatorUserId
         this.properties = user.properties
         this.loginMethod = user.loginMethod
+        this.activeOrgId = user.activeOrgId
+    }
+
+    public getActiveOrg(): OrgMemberInfo | undefined {
+        if (!this.activeOrgId) {
+            return undefined
+        }
+        return this.getOrg(this.activeOrgId)
+    }
+
+    public getActiveOrgId(): string | undefined {
+        return this.activeOrgId
     }
 
     public getOrg(orgId: string): OrgMemberInfo | undefined {
@@ -290,6 +304,7 @@ export type InternalOrgMemberInfo = {
 export type InternalUser = {
     user_id: string
     org_id_to_org_member_info?: { [org_id: string]: InternalOrgMemberInfo }
+    org_member_info?: InternalOrgMemberInfo
 
     email: string
     first_name?: string
@@ -305,9 +320,22 @@ export type InternalUser = {
 }
 
 export function toUser(snake_case: InternalUser): User {
+    let orgIdToOrgMemberInfo: OrgIdToOrgMemberInfo | undefined
+    let activeOrgId: string | undefined
+    if (snake_case.org_member_info) {
+        orgIdToOrgMemberInfo = toOrgIdToOrgMemberInfo({
+            [snake_case.org_member_info.org_id]: snake_case.org_member_info,
+        })
+        activeOrgId = snake_case.org_member_info.org_id
+    } else {
+        orgIdToOrgMemberInfo = toOrgIdToOrgMemberInfo(snake_case.org_id_to_org_member_info)
+        activeOrgId = undefined
+    }
+
     const camelCase: User = {
         userId: snake_case.user_id,
-        orgIdToOrgMemberInfo: toOrgIdToOrgMemberInfo(snake_case.org_id_to_org_member_info),
+        orgIdToOrgMemberInfo,
+        activeOrgId,
         email: snake_case.email,
         firstName: snake_case.first_name,
         lastName: snake_case.last_name,
