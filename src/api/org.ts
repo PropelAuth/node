@@ -179,6 +179,40 @@ export function addUserToOrg(
     )
 }
 
+export type AddUserToOrgWithRolesRequest = {
+    userId: string
+    orgId: string
+    roles: string[]
+}
+
+export function addUserToOrgWithRoles(
+    authUrl: URL,
+    integrationApiKey: string,
+    addUserToOrgWithRolesRequest: AddUserToOrgWithRolesRequest
+): Promise<boolean> {
+    const request = {
+        user_id: addUserToOrgWithRolesRequest.userId,
+        org_id: addUserToOrgWithRolesRequest.orgId,
+        role: addUserToOrgWithRolesRequest.roles[0],
+        additional_roles: addUserToOrgWithRolesRequest.roles.slice(1),
+    }
+    return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/add_user`, "POST", JSON.stringify(request)).then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new AddUserToOrgException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when adding user to org")
+            }
+
+            return true
+        }
+    )
+}
+
 export type ChangeUserRoleInOrgRequest = {
     userId: string
     orgId: string
@@ -194,6 +228,44 @@ export function changeUserRoleInOrg(
         user_id: changeUserRoleInOrgRequest.userId,
         org_id: changeUserRoleInOrgRequest.orgId,
         role: changeUserRoleInOrgRequest.role,
+    }
+    return httpRequest(
+        authUrl,
+        integrationApiKey,
+        `${ENDPOINT_PATH}/change_role`,
+        "POST",
+        JSON.stringify(request)
+    ).then((httpResponse) => {
+        if (httpResponse.statusCode === 401) {
+            throw new Error("integrationApiKey is incorrect")
+        } else if (httpResponse.statusCode === 400) {
+            throw new ChangeUserRoleInOrgException(httpResponse.response)
+        } else if (httpResponse.statusCode === 404) {
+            return false
+        } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+            throw new Error("Unknown error when changing users role in org")
+        }
+
+        return true
+    })
+}
+
+export type ChangeUserRolesInOrgRequest = {
+    userId: string
+    orgId: string
+    roles: string[]
+}
+
+export function changeUserRolesInOrg(
+    authUrl: URL,
+    integrationApiKey: string,
+    changeUserRolesInOrgRequest: ChangeUserRolesInOrgRequest
+): Promise<boolean> {
+    const request = {
+        user_id: changeUserRolesInOrgRequest.userId,
+        org_id: changeUserRolesInOrgRequest.orgId,
+        role: changeUserRolesInOrgRequest.roles[0],
+        additional_roles: changeUserRolesInOrgRequest.roles.slice(1),
     }
     return httpRequest(
         authUrl,

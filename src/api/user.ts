@@ -308,6 +308,41 @@ export function inviteUserToOrg(
     )
 }
 
+export type InviteUserToOrgWithRolesRequest = {
+    orgId: string
+    email: string
+    roles: string[]
+}
+
+export function inviteUserToOrgWithRoles(
+    authUrl: URL,
+    integrationApiKey: string,
+    inviteUserToOrgWithRolesRequest: InviteUserToOrgWithRolesRequest
+): Promise<boolean> {
+    const body = {
+        org_id: inviteUserToOrgWithRolesRequest.orgId,
+        email: inviteUserToOrgWithRolesRequest.email,
+        role: inviteUserToOrgWithRolesRequest.roles[0],
+        additional_roles: inviteUserToOrgWithRolesRequest.roles.slice(1),
+    }
+
+    return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/invite_user`, "POST", JSON.stringify(body)).then(
+        (httpResponse) => {
+            if (httpResponse.statusCode === 401) {
+                throw new Error("integrationApiKey is incorrect")
+            } else if (httpResponse.statusCode === 400) {
+                throw new BadRequestException(httpResponse.response)
+            } else if (httpResponse.statusCode === 404) {
+                return false
+            } else if (httpResponse.statusCode && httpResponse.statusCode >= 400) {
+                throw new Error("Unknown error when inviting a user to the org")
+            }
+
+            return true
+        }
+    )
+}
+
 // PUT/PATCH
 export type UpdateUserMetadataRequest = {
     username?: string

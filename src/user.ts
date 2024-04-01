@@ -198,15 +198,22 @@ export type UserMetadata = {
     properties?: { [key: string]: unknown }
 }
 
+export enum OrgRoleStructure {
+    SingleRole = "single_role_in_hierarchy",
+    MultiRole = "multi_role",
+}
+
 export class OrgMemberInfo {
     public readonly orgId: string
     public readonly orgName: string
     public readonly orgMetadata: { [key: string]: unknown }
     public readonly urlSafeOrgName: string
+    public readonly orgRoleStructure: OrgRoleStructure 
 
     private readonly userAssignedRole: string
     private readonly userInheritedRolesPlusCurrentRole: string[]
     private readonly userPermissions: string[]
+    private readonly userAssignedAdditionalRoles: string[]
 
     constructor(
         orgId: string,
@@ -215,7 +222,9 @@ export class OrgMemberInfo {
         urlSafeOrgName: string,
         userAssignedRole: string,
         userInheritedRolesPlusCurrentRole: string[],
-        userPermissions: string[]
+        userPermissions: string[],
+        orgRoleStructure: OrgRoleStructure,
+        userAssignedAdditionalRoles: string[]
     ) {
         this.orgId = orgId
         this.orgName = orgName
@@ -225,6 +234,8 @@ export class OrgMemberInfo {
         this.userAssignedRole = userAssignedRole
         this.userInheritedRolesPlusCurrentRole = userInheritedRolesPlusCurrentRole
         this.userPermissions = userPermissions
+        this.orgRoleStructure = orgRoleStructure
+        this.userAssignedAdditionalRoles = userAssignedAdditionalRoles
     }
 
     // getters
@@ -237,16 +248,28 @@ export class OrgMemberInfo {
     }
 
     get inheritedRolesPlusCurrentRole(): string[] {
-        return this.userInheritedRolesPlusCurrentRole
+        if (this.orgRoleStructure === OrgRoleStructure.MultiRole) {
+            return this.userAssignedAdditionalRoles.concat(this.userAssignedRole)
+        } else {
+            return this.userInheritedRolesPlusCurrentRole
+        }
     }
 
     // validation methods
     public isRole(role: string): boolean {
-        return this.userAssignedRole === role
+        if (this.orgRoleStructure === OrgRoleStructure.MultiRole) {
+            return this.userAssignedRole === role || this.userAssignedAdditionalRoles.includes(role)
+        } else {
+            return this.userAssignedRole === role
+        }
     }
 
     public isAtLeastRole(role: string): boolean {
-        return this.userInheritedRolesPlusCurrentRole.includes(role)
+        if (this.orgRoleStructure === OrgRoleStructure.MultiRole) {
+            return this.userAssignedRole === role || this.userAssignedAdditionalRoles.includes(role)
+        } else {
+            return this.userInheritedRolesPlusCurrentRole.includes(role)
+        }
     }
 
     public hasPermission(permission: string): boolean {
@@ -267,7 +290,9 @@ export class OrgMemberInfo {
                 obj.urlSafeOrgName,
                 obj.userAssignedRole,
                 obj.userInheritedRolesPlusCurrentRole,
-                obj.userPermissions
+                obj.userPermissions,
+                obj.orgRoleStructure,
+                obj.userAssignedAdditionalRoles
             )
         } catch (e) {
             console.error(
@@ -295,9 +320,11 @@ export type InternalOrgMemberInfo = {
     org_name: string
     org_metadata: { [key: string]: any }
     url_safe_org_name: string
+    org_role_structure: OrgRoleStructure
     user_role: string
     inherited_user_roles_plus_current_role: string[]
     user_permissions: string[]
+    additional_roles: string[]
 }
 
 // This type is used to represent the user returned from the refresh token.
@@ -368,7 +395,9 @@ export function toOrgIdToOrgMemberInfo(snake_case?: {
                 snakeCaseValue.url_safe_org_name,
                 snakeCaseValue.user_role,
                 snakeCaseValue.inherited_user_roles_plus_current_role,
-                snakeCaseValue.user_permissions
+                snakeCaseValue.user_permissions,
+                snakeCaseValue.org_role_structure,
+                snakeCaseValue.additional_roles
             )
         }
     }

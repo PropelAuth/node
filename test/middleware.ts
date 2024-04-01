@@ -6,7 +6,7 @@ import { initBaseAuth } from "../src"
 import { TokenVerificationMetadata } from "../src/api/tokenVerificationMetadata"
 import { RequiredOrgInfo } from "../src/auth"
 import { ForbiddenException, UnauthorizedException, UnexpectedException } from "../src/exceptions"
-import { InternalOrgMemberInfo, InternalUser, OrgMemberInfo, toUser, User } from "../src/user"
+import { InternalOrgMemberInfo, InternalUser, OrgMemberInfo, OrgRoleStructure, toUser, User } from "../src/user"
 import { parseSnakeCaseToCamelCase } from "../src/utils"
 
 const AUTH_URL = "https://auth.example.com"
@@ -124,6 +124,93 @@ test("validateAccessTokenAndGetUser fails with incorrect issuer", async () => {
     expect(nock.isDone()).toBe(true)
 })
 
+test("toUser converts correctly with multi-role orgs", async () => {
+    const internalUser: InternalUser = {
+        user_id: "cbf064e2-edaa-4d35-b413-a8d857329c12",
+        email: "easteregg@propelauth.com",
+        first_name: "easter",
+        org_id_to_org_member_info: {
+            "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a": {
+                org_id: "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
+                org_name: "orgA",
+                org_metadata: { orgdata_a: "orgvalue_a" },
+                url_safe_org_name: "orga",
+                org_role_structure: OrgRoleStructure.MultiRole,
+                user_role: "Role A",
+                inherited_user_roles_plus_current_role: ["Role A"],
+                user_permissions: [],
+                additional_roles: ["Role B", "Role C"],
+            },
+            "4ca20d17-5021-4d62-8b3d-148214fa8d6d": {
+                org_id: "4ca20d17-5021-4d62-8b3d-148214fa8d6d",
+                org_name: "orgB",
+                org_metadata: { orgdata_b: "orgvalue_b" },
+                url_safe_org_name: "orgb",
+                org_role_structure: OrgRoleStructure.MultiRole,
+                user_role: "Role B",
+                inherited_user_roles_plus_current_role: ["Role B",],
+                user_permissions: [],
+                additional_roles: [],
+            },
+            "15a31d0c-d284-4e7b-80a2-afb23f939cc3": {
+                org_id: "15a31d0c-d284-4e7b-80a2-afb23f939cc3",
+                org_name: "orgC",
+                org_metadata: { orgdata_c: "orgvalue_c" },
+                url_safe_org_name: "orgc",
+                org_role_structure: OrgRoleStructure.MultiRole,
+                user_role: "Role C",
+                inherited_user_roles_plus_current_role: ["Role C"],
+                user_permissions: [],
+                additional_roles: ["Role A"],
+            },
+        },
+    }
+
+    const user: User = {
+        userId: "cbf064e2-edaa-4d35-b413-a8d857329c12",
+        email: "easteregg@propelauth.com",
+        firstName: "easter",
+        orgIdToOrgMemberInfo: {
+            "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a": new OrgMemberInfo(
+                "99ee1329-e536-4aeb-8e2b-9f56c1b8fe8a",
+                "orgA",
+                { orgdata_a: "orgvalue_a" },
+                "orga",
+                "Role A",
+                ["Role A"],
+                [],
+                OrgRoleStructure.MultiRole,
+                ["Role B", "Role C"]
+            ),
+            "4ca20d17-5021-4d62-8b3d-148214fa8d6d": new OrgMemberInfo(
+                "4ca20d17-5021-4d62-8b3d-148214fa8d6d",
+                "orgB",
+                { orgdata_b: "orgvalue_b" },
+                "orgb",
+                "Role B",
+                ["Role B"],
+                [],
+                OrgRoleStructure.MultiRole,
+                []
+            ),
+            "15a31d0c-d284-4e7b-80a2-afb23f939cc3": new OrgMemberInfo(
+                "15a31d0c-d284-4e7b-80a2-afb23f939cc3",
+                "orgC",
+                { orgdata_c: "orgvalue_c" },
+                "orgc",
+                "Role C",
+                ["Role C"],
+                [],
+                OrgRoleStructure.MultiRole,
+                ["Role A"]
+            ),
+        },
+        loginMethod: { loginMethod: "unknown" },
+    }
+
+    expect(toUser(internalUser)).toEqual(user)
+})
+
 test("toUser converts correctly with orgs", async () => {
     const internalUser: InternalUser = {
         user_id: "cbf064e2-edaa-4d35-b413-a8d857329c12",
@@ -135,27 +222,33 @@ test("toUser converts correctly with orgs", async () => {
                 org_name: "orgA",
                 org_metadata: { orgdata_a: "orgvalue_a" },
                 url_safe_org_name: "orga",
+                org_role_structure: OrgRoleStructure.SingleRole,
                 user_role: "Owner",
                 inherited_user_roles_plus_current_role: ["Owner", "Admin", "Member"],
                 user_permissions: [],
+                additional_roles: [],
             },
             "4ca20d17-5021-4d62-8b3d-148214fa8d6d": {
                 org_id: "4ca20d17-5021-4d62-8b3d-148214fa8d6d",
                 org_name: "orgB",
                 org_metadata: { orgdata_b: "orgvalue_b" },
                 url_safe_org_name: "orgb",
+                org_role_structure: OrgRoleStructure.SingleRole,
                 user_role: "Admin",
                 inherited_user_roles_plus_current_role: ["Admin", "Member"],
                 user_permissions: [],
+                additional_roles: [],
             },
             "15a31d0c-d284-4e7b-80a2-afb23f939cc3": {
                 org_id: "15a31d0c-d284-4e7b-80a2-afb23f939cc3",
                 org_name: "orgC",
                 org_metadata: { orgdata_c: "orgvalue_c" },
                 url_safe_org_name: "orgc",
+                org_role_structure: OrgRoleStructure.SingleRole,
                 user_role: "Member",
                 inherited_user_roles_plus_current_role: ["Member"],
                 user_permissions: [],
+                additional_roles: [],
             },
         },
     }
@@ -172,6 +265,8 @@ test("toUser converts correctly with orgs", async () => {
                 "orga",
                 "Owner",
                 ["Owner", "Admin", "Member"],
+                [],
+                OrgRoleStructure.SingleRole,
                 []
             ),
             "4ca20d17-5021-4d62-8b3d-148214fa8d6d": new OrgMemberInfo(
@@ -181,6 +276,8 @@ test("toUser converts correctly with orgs", async () => {
                 "orgb",
                 "Admin",
                 ["Admin", "Member"],
+                [],
+                OrgRoleStructure.SingleRole,
                 []
             ),
             "15a31d0c-d284-4e7b-80a2-afb23f939cc3": new OrgMemberInfo(
@@ -190,6 +287,8 @@ test("toUser converts correctly with orgs", async () => {
                 "orgc",
                 "Member",
                 ["Member"],
+                [],
+                OrgRoleStructure.SingleRole,
                 []
             ),
         },
@@ -209,9 +308,11 @@ test("toUser converts correctly with active org", async () => {
             org_name: "orgA",
             org_metadata: { orgdata_a: "orgvalue_a" },
             url_safe_org_name: "orga",
+            org_role_structure: OrgRoleStructure.SingleRole,
             user_role: "Owner",
             inherited_user_roles_plus_current_role: ["Owner", "Admin", "Member"],
             user_permissions: [],
+            additional_roles: [],
         },
     }
 
@@ -227,6 +328,8 @@ test("toUser converts correctly with active org", async () => {
                 "orga",
                 "Owner",
                 ["Owner", "Admin", "Member"],
+                [],
+                OrgRoleStructure.SingleRole,
                 []
             ),
         },
@@ -665,9 +768,11 @@ function randomOrg(): InternalOrgMemberInfo {
         org_name: randomString(),
         org_metadata: { internalData: randomString() },
         url_safe_org_name: urlSafeOrgName,
+        org_role_structure: OrgRoleStructure.SingleRole,
         user_role: "Admin",
         inherited_user_roles_plus_current_role: ["Admin", "Member"],
         user_permissions: ["read", "write"],
+        additional_roles: [],
     }
 }
 
