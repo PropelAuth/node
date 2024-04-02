@@ -57,6 +57,7 @@ export {
     Org,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
+    OrgRoleStructure,
     toOrgIdToOrgMemberInfo,
     toUser,
     User,
