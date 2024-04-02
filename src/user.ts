@@ -223,8 +223,8 @@ export class OrgMemberInfo {
         userAssignedRole: string,
         userInheritedRolesPlusCurrentRole: string[],
         userPermissions: string[],
-        orgRoleStructure: OrgRoleStructure,
-        userAssignedAdditionalRoles: string[]
+        orgRoleStructure?: OrgRoleStructure,
+        userAssignedAdditionalRoles?: string[]
     ) {
         this.orgId = orgId
         this.orgName = orgName
@@ -234,8 +234,8 @@ export class OrgMemberInfo {
         this.userAssignedRole = userAssignedRole
         this.userInheritedRolesPlusCurrentRole = userInheritedRolesPlusCurrentRole
         this.userPermissions = userPermissions
-        this.orgRoleStructure = orgRoleStructure
-        this.userAssignedAdditionalRoles = userAssignedAdditionalRoles
+        this.orgRoleStructure = orgRoleStructure ?? OrgRoleStructure.SingleRole
+        this.userAssignedAdditionalRoles = userAssignedAdditionalRoles ?? []
     }
 
     // getters
