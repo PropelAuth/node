@@ -1,93 +1,22 @@
-import * as jose from "jose"
-import { AccessToken, createAccessToken, CreateAccessTokenRequest } from "./api/accessToken"
 import {
-    ApiKeysCreateRequest,
-    ApiKeysQueryRequest,
-    ApiKeyUpdateRequest,
-    createApiKey,
-    deleteApiKey,
-    fetchApiKey,
-    fetchArchivedApiKeys,
-    fetchCurrentApiKeys,
-    updateApiKey,
-    validateApiKey,
-} from "./api/endUserApiKeys"
-import { createMagicLink, CreateMagicLinkRequest, MagicLink } from "./api/magicLink"
-import { migrateUserFromExternalSource, MigrateUserFromExternalSourceRequest } from "./api/migrateUser"
-import {
-    addUserToOrg,
-    AddUserToOrgRequest,
-    allowOrgToSetupSamlConnection,
-    changeUserRoleInOrg,
-    ChangeUserRoleInOrgRequest,
-    createOrg,
-    CreateOrgRequest,
-    deleteOrg,
-    disallowOrgToSetupSamlConnection,
-    fetchOrg,
-    fetchOrgByQuery,
-    OrgQuery,
-    OrgQueryResponse,
-    removeUserFromOrg,
-    RemoveUserFromOrgRequest,
-    updateOrg,
-    UpdateOrgRequest,
-} from "./api/org"
-import {
-    fetchTokenVerificationMetadata,
-    getTokenVerificationMetadataPromise,
-    TokenVerificationMetadata,
-    TokenVerificationMetadataWithPublicKey,
-} from "./api/tokenVerificationMetadata"
-import {
-    clearUserPassword,
-    createUser,
-    CreateUserRequest,
-    deleteUser,
-    disableUser,
-    disableUser2fa,
-    disableUserCanCreateOrgs,
-    enableUser,
-    enableUserCanCreateOrgs,
-    fetchBatchUserMetadata,
-    fetchUserMetadataByQuery,
-    fetchUserMetadataByUserIdWithIdCheck,
-    fetchUsersByQuery,
-    fetchUserSignupQueryParams,
-    fetchUsersInOrg,
-    inviteUserToOrg,
-    InviteUserToOrgRequest,
-    updateUserEmail,
-    UpdateUserEmailRequest,
-    updateUserMetadata,
-    UpdateUserMetadataRequest,
-    updateUserPassword,
-    UpdateUserPasswordRequest,
-    UserSignupQueryParams,
-    UsersInOrgQuery,
-    UsersPagedResponse,
-    UsersQuery,
-} from "./api/user"
-import { ForbiddenException, UnauthorizedException } from "./exceptions"
-import {
-    ApiKeyFull,
-    ApiKeyNew,
-    ApiKeyResultPage,
-    ApiKeyValidation,
-    CreatedOrg,
-    CreatedUser,
+    ForbiddenException,
+    getApis,
     InternalUser,
-    Organization,
-    OrgApiKeyValidation,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
-    PersonalApiKeyValidation,
+    TokenVerificationMetadata,
     toUser,
+    UnauthorizedException,
     User,
     UserAndOrgMemberInfo,
-    UserMetadata,
-} from "./user"
-import { validateAuthUrl, validateOrgApiKey, validatePersonalApiKey } from "./validators"
+    UserClass,
+} from "@propelauth/node-apis"
+import * as jose from "jose"
+import {
+    getTokenVerificationMetadataPromise,
+    TokenVerificationMetadataWithPublicKey,
+} from "./tokenVerificationMetadata"
+import { validateAuthUrl } from "./validators"
 
 export type BaseAuthOptions = {
     authUrl: string
@@ -110,21 +39,23 @@ export type BaseAuthOptions = {
 export function initBaseAuth(opts: BaseAuthOptions) {
     const authUrl: URL = validateAuthUrl(opts.authUrl)
     const integrationApiKey: string = opts.apiKey
+    const apis = getApis(authUrl, integrationApiKey)
 
     // A promise that resolves to the token verification metadata, whether it's fetched or manually provided
-    const tokenVerificationMetadataPromise = fetchTokenVerificationMetadata(
-        authUrl,
-        integrationApiKey,
-        opts.manualTokenVerificationMetadata
-    ).catch((err) => {
-        console.error("Error initializing auth library. ", err)
-    })
+    const tokenVerificationMetadataPromise = opts.manualTokenVerificationMetadata
+        ? Promise.resolve(opts.manualTokenVerificationMetadata)
+        : apis.fetchTokenVerificationMetadata().catch((err: unknown) => {
+              console.error("Error initializing auth library. ", err)
+          })
 
     // A promise that resolves to the token verification metadata with the public key imported
     const tokenVerificationMetadataWithPublicKeyPromise = getTokenVerificationMetadataPromise(
         tokenVerificationMetadataPromise
     )
 
+    const validateAccessTokenAndGetUserClass = wrapValidateAccessTokenAndGetUserClass(
+        tokenVerificationMetadataWithPublicKeyPromise
+    )
     const validateAccessTokenAndGetUser = wrapValidateAccessTokenAndGetUser(
         tokenVerificationMetadataWithPublicKeyPromise
     )
@@ -140,225 +71,9 @@ export function initBaseAuth(opts: BaseAuthOptions) {
     const validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions =
         wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(tokenVerificationMetadataWithPublicKeyPromise)
 
-    function fetchUserMetadataByUserId(userId: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
-        return fetchUserMetadataByUserIdWithIdCheck(authUrl, integrationApiKey, userId, includeOrgs)
-    }
-
-    function fetchUserMetadataByEmail(email: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
-        return fetchUserMetadataByQuery(authUrl, integrationApiKey, "email", {
-            email: email,
-            include_orgs: includeOrgs || false,
-        })
-    }
-
-    function fetchUserMetadataByUsername(username: string, includeOrgs?: boolean): Promise<UserMetadata | null> {
-        return fetchUserMetadataByQuery(authUrl, integrationApiKey, "username", {
-            username: username,
-            include_orgs: includeOrgs || false,
-        })
-    }
-
-    function fetchUserSignupQueryParamsWrapper(userId: string): Promise<UserSignupQueryParams | null> {
-        return fetchUserSignupQueryParams(authUrl, integrationApiKey, userId)
-    }
-
-    function fetchBatchUserMetadataByUserIds(
-        userIds: string[],
-        includeOrgs?: boolean
-    ): Promise<{ [userId: string]: UserMetadata }> {
-        return fetchBatchUserMetadata(
-            authUrl,
-            integrationApiKey,
-            "user_ids",
-            userIds,
-            (x) => x.userId,
-            includeOrgs || false
-        )
-    }
-
-    function fetchBatchUserMetadataByEmails(
-        emails: string[],
-        includeOrgs?: boolean
-    ): Promise<{ [email: string]: UserMetadata }> {
-        return fetchBatchUserMetadata(
-            authUrl,
-            integrationApiKey,
-            "emails",
-            emails,
-            (x) => x.email,
-            includeOrgs || false
-        )
-    }
-
-    function fetchBatchUserMetadataByUsernames(
-        usernames: string[],
-        includeOrgs?: boolean
-    ): Promise<{ [username: string]: UserMetadata }> {
-        return fetchBatchUserMetadata(
-            authUrl,
-            integrationApiKey,
-            "usernames",
-            usernames,
-            (x) => x.username || "",
-            includeOrgs || false
-        )
-    }
-
-    function fetchOrgWrapper(orgId: string): Promise<Organization | null> {
-        return fetchOrg(authUrl, integrationApiKey, orgId)
-    }
-
-    function fetchOrgsByQueryWrapper(orgQuery: OrgQuery): Promise<OrgQueryResponse> {
-        return fetchOrgByQuery(authUrl, integrationApiKey, orgQuery)
-    }
-
-    function fetchUsersByQueryWrapper(usersQuery: UsersQuery): Promise<UsersPagedResponse> {
-        return fetchUsersByQuery(authUrl, integrationApiKey, usersQuery)
-    }
-
-    function fetchUsersInOrgWrapper(usersInOrgQuery: UsersInOrgQuery): Promise<UsersPagedResponse> {
-        return fetchUsersInOrg(authUrl, integrationApiKey, usersInOrgQuery)
-    }
-
-    function createUserWrapper(createUserRequest: CreateUserRequest): Promise<CreatedUser> {
-        return createUser(authUrl, integrationApiKey, createUserRequest)
-    }
-
-    function clearUserPasswordWrapper(userId: string): Promise<boolean> {
-        return clearUserPassword(authUrl, integrationApiKey, userId)
-    }
-
-    function updateUserMetadataWrapper(
-        userId: string,
-        updateUserMetadataRequest: UpdateUserMetadataRequest
-    ): Promise<boolean> {
-        return updateUserMetadata(authUrl, integrationApiKey, userId, updateUserMetadataRequest)
-    }
-
-    function deleteUserWrapper(userId: string): Promise<boolean> {
-        return deleteUser(authUrl, integrationApiKey, userId)
-    }
-
-    function disableUserWrapper(userId: string): Promise<boolean> {
-        return disableUser(authUrl, integrationApiKey, userId)
-    }
-
-    function enableUserWrapper(userId: string): Promise<boolean> {
-        return enableUser(authUrl, integrationApiKey, userId)
-    }
-
-    function disableUser2faWrapper(userId: string): Promise<boolean> {
-        return disableUser2fa(authUrl, integrationApiKey, userId)
-    }
-
-    function updateUserEmailWrapper(userId: string, updateUserEmailRequest: UpdateUserEmailRequest): Promise<boolean> {
-        return updateUserEmail(authUrl, integrationApiKey, userId, updateUserEmailRequest)
-    }
-
-    function updateUserPasswordWrapper(
-        userId: string,
-        updateUserPasswordRequest: UpdateUserPasswordRequest
-    ): Promise<boolean> {
-        return updateUserPassword(authUrl, integrationApiKey, userId, updateUserPasswordRequest)
-    }
-
-    function enableUserCanCreateOrgsWrapper(userId: string): Promise<boolean> {
-        return enableUserCanCreateOrgs(authUrl, integrationApiKey, userId)
-    }
-
-    function disableUserCanCreateOrgsWrapper(userId: string): Promise<boolean> {
-        return disableUserCanCreateOrgs(authUrl, integrationApiKey, userId)
-    }
-
-    function createMagicLinkWrapper(createMagicLinkRequest: CreateMagicLinkRequest): Promise<MagicLink> {
-        return createMagicLink(authUrl, integrationApiKey, createMagicLinkRequest)
-    }
-
-    function createAccessTokenWrapper(createAccessTokenRequest: CreateAccessTokenRequest): Promise<AccessToken> {
-        return createAccessToken(authUrl, integrationApiKey, createAccessTokenRequest)
-    }
-
-    function migrateUserFromExternalSourceWrapper(
-        migrateUserFromExternalSourceRequest: MigrateUserFromExternalSourceRequest
-    ): Promise<User> {
-        return migrateUserFromExternalSource(authUrl, integrationApiKey, migrateUserFromExternalSourceRequest)
-    }
-
-    function createOrgWrapper(createOrgRequest: CreateOrgRequest): Promise<CreatedOrg> {
-        return createOrg(authUrl, integrationApiKey, createOrgRequest)
-    }
-
-    function addUserToOrgWrapper(addUserToOrgRequest: AddUserToOrgRequest): Promise<boolean> {
-        return addUserToOrg(authUrl, integrationApiKey, addUserToOrgRequest)
-    }
-
-    function changeUserRoleInOrgWrapper(changeUserRoleInOrgRequest: ChangeUserRoleInOrgRequest): Promise<boolean> {
-        return changeUserRoleInOrg(authUrl, integrationApiKey, changeUserRoleInOrgRequest)
-    }
-
-    function removeUserFromOrgWrapper(removeUserFromOrgRequest: RemoveUserFromOrgRequest): Promise<boolean> {
-        return removeUserFromOrg(authUrl, integrationApiKey, removeUserFromOrgRequest)
-    }
-
-    function updateOrgWrapper(updateOrgRequest: UpdateOrgRequest): Promise<boolean> {
-        return updateOrg(authUrl, integrationApiKey, updateOrgRequest)
-    }
-
-    function deleteOrgWrapper(orgId: string): Promise<boolean> {
-        return deleteOrg(authUrl, integrationApiKey, orgId)
-    }
-
-    function allowOrgToSetupSamlConnectionWrapper(orgId: string): Promise<boolean> {
-        return allowOrgToSetupSamlConnection(authUrl, integrationApiKey, orgId)
-    }
-
-    function disallowOrgToSetupSamlConnectionWrapper(orgId: string): Promise<boolean> {
-        return disallowOrgToSetupSamlConnection(authUrl, integrationApiKey, orgId)
-    }
-
-    function inviteUserToOrgWrapper(inviteUserToOrgRequest: InviteUserToOrgRequest): Promise<boolean> {
-        return inviteUserToOrg(authUrl, integrationApiKey, inviteUserToOrgRequest)
-    }
-
-    // end user api key wrappers
-    function fetchApiKeyWrapper(apiKeyId: string): Promise<ApiKeyFull> {
-        return fetchApiKey(authUrl, integrationApiKey, apiKeyId)
-    }
-
-    function fetchCurrentApiKeysWrapper(apiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
-        return fetchCurrentApiKeys(authUrl, integrationApiKey, apiKeyQuery)
-    }
-
-    function fetchArchivedApiKeysWrapper(apiKeyQuery: ApiKeysQueryRequest): Promise<ApiKeyResultPage> {
-        return fetchArchivedApiKeys(authUrl, integrationApiKey, apiKeyQuery)
-    }
-
-    function createApiKeyWrapper(apiKeyCreate: ApiKeysCreateRequest): Promise<ApiKeyNew> {
-        return createApiKey(authUrl, integrationApiKey, apiKeyCreate)
-    }
-
-    function updateApiKeyWrapper(apiKeyId: string, ApiKeyUpdate: ApiKeyUpdateRequest): Promise<boolean> {
-        return updateApiKey(authUrl, integrationApiKey, apiKeyId, ApiKeyUpdate)
-    }
-
-    function deleteApiKeyWrapper(apiKeyId: string): Promise<boolean> {
-        return deleteApiKey(authUrl, integrationApiKey, apiKeyId)
-    }
-
-    function validatePersonalApiKeyWrapper(apiKeyToken: string): Promise<PersonalApiKeyValidation> {
-        return validatePersonalApiKey(authUrl, integrationApiKey, apiKeyToken)
-    }
-
-    function validateOrgApiKeyWrapper(apiKeyToken: string): Promise<OrgApiKeyValidation> {
-        return validateOrgApiKey(authUrl, integrationApiKey, apiKeyToken)
-    }
-
-    function validateApiKeyWrapper(apiKeyToken: string): Promise<ApiKeyValidation> {
-        return validateApiKey(authUrl, integrationApiKey, apiKeyToken)
-    }
-
     return {
-        // validate and fetching functions
+        // validate functions
+        validateAccessTokenAndGetUserClass,
         validateAccessTokenAndGetUser,
         validateAccessTokenAndGetUserWithOrgInfo,
         validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole,
@@ -366,52 +81,65 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         validateAccessTokenAndGetUserWithOrgInfoWithPermission,
         validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions,
         // fetching functions
-        fetchUserMetadataByUserId,
-        fetchUserMetadataByEmail,
-        fetchUserMetadataByUsername,
-        fetchUserSignupQueryParams: fetchUserSignupQueryParamsWrapper,
-        fetchBatchUserMetadataByUserIds,
-        fetchBatchUserMetadataByEmails,
-        fetchBatchUserMetadataByUsernames,
-        fetchOrg: fetchOrgWrapper,
-        fetchOrgByQuery: fetchOrgsByQueryWrapper,
-        fetchUsersByQuery: fetchUsersByQueryWrapper,
-        fetchUsersInOrg: fetchUsersInOrgWrapper,
+        fetchUserMetadataByUserId: apis.fetchUserMetadataByUserId,
+        fetchUserMetadataByEmail: apis.fetchUserMetadataByEmail,
+        fetchUserMetadataByUsername: apis.fetchUserMetadataByUsername,
+        fetchUserSignupQueryParams: apis.fetchUserSignupQueryParams,
+        fetchBatchUserMetadataByUserIds: apis.fetchBatchUserMetadataByUserIds,
+        fetchBatchUserMetadataByEmails: apis.fetchBatchUserMetadataByEmails,
+        fetchBatchUserMetadataByUsernames: apis.fetchBatchUserMetadataByUsernames,
+        fetchOrg: apis.fetchOrg,
+        fetchOrgByQuery: apis.fetchOrgByQuery,
+        fetchUsersByQuery: apis.fetchUsersByQuery,
+        fetchUsersInOrg: apis.fetchUsersInOrg,
         // user management functions
-        createUser: createUserWrapper,
-        clearUserPassword: clearUserPasswordWrapper,
-        updateUserMetadata: updateUserMetadataWrapper,
-        updateUserEmail: updateUserEmailWrapper,
-        updateUserPassword: updateUserPasswordWrapper,
-        createMagicLink: createMagicLinkWrapper,
-        createAccessToken: createAccessTokenWrapper,
-        migrateUserFromExternalSource: migrateUserFromExternalSourceWrapper,
-        deleteUser: deleteUserWrapper,
-        disableUser: disableUserWrapper,
-        enableUser: enableUserWrapper,
-        disableUser2fa: disableUser2faWrapper,
-        enableUserCanCreateOrgs: enableUserCanCreateOrgsWrapper,
-        disableUserCanCreateOrgs: disableUserCanCreateOrgsWrapper,
+        createUser: apis.createUser,
+        clearUserPassword: apis.clearUserPassword,
+        updateUserMetadata: apis.updateUserMetadata,
+        updateUserEmail: apis.updateUserEmail,
+        updateUserPassword: apis.updateUserPassword,
+        createMagicLink: apis.createMagicLink,
+        createAccessToken: apis.createAccessToken,
+        migrateUserFromExternalSource: apis.migrateUserFromExternalSource,
+        deleteUser: apis.deleteUser,
+        disableUser: apis.disableUser,
+        enableUser: apis.enableUser,
+        disableUser2fa: apis.disableUser2fa,
+        enableUserCanCreateOrgs: apis.enableUserCanCreateOrgs,
+        disableUserCanCreateOrgs: apis.disableUserCanCreateOrgs,
         // org management functions
-        createOrg: createOrgWrapper,
-        addUserToOrg: addUserToOrgWrapper,
-        changeUserRoleInOrg: changeUserRoleInOrgWrapper,
-        removeUserFromOrg: removeUserFromOrgWrapper,
-        updateOrg: updateOrgWrapper,
-        deleteOrg: deleteOrgWrapper,
-        allowOrgToSetupSamlConnection: allowOrgToSetupSamlConnectionWrapper,
-        disallowOrgToSetupSamlConnection: disallowOrgToSetupSamlConnectionWrapper,
-        inviteUserToOrg: inviteUserToOrgWrapper,
+        createOrg: apis.createOrg,
+        addUserToOrg: apis.addUserToOrg,
+        changeUserRoleInOrg: apis.changeUserRoleInOrg,
+        removeUserFromOrg: apis.removeUserFromOrg,
+        updateOrg: apis.updateOrg,
+        deleteOrg: apis.deleteOrg,
+        allowOrgToSetupSamlConnection: apis.allowOrgToSetupSamlConnection,
+        disallowOrgToSetupSamlConnection: apis.disallowOrgToSetupSamlConnection,
+        inviteUserToOrg: apis.inviteUserToOrg,
         // api keys functions
-        fetchApiKey: fetchApiKeyWrapper,
-        fetchCurrentApiKeys: fetchCurrentApiKeysWrapper,
-        fetchArchivedApiKeys: fetchArchivedApiKeysWrapper,
-        createApiKey: createApiKeyWrapper,
-        updateApiKey: updateApiKeyWrapper,
-        deleteApiKey: deleteApiKeyWrapper,
-        validateApiKey: validateApiKeyWrapper,
-        validatePersonalApiKey: validatePersonalApiKeyWrapper,
-        validateOrgApiKey: validateOrgApiKeyWrapper,
+        fetchApiKey: apis.fetchApiKey,
+        fetchCurrentApiKeys: apis.fetchCurrentApiKeys,
+        fetchArchivedApiKeys: apis.fetchArchivedApiKeys,
+        createApiKey: apis.createApiKey,
+        updateApiKey: apis.updateApiKey,
+        deleteApiKey: apis.deleteApiKey,
+        validateApiKey: apis.validateApiKey,
+        validatePersonalApiKey: apis.validatePersonalApiKey,
+        validateOrgApiKey: apis.validateOrgApiKey,
+    }
+}
+
+// wrapper function that returns a UserClass object
+function wrapValidateAccessTokenAndGetUserClass(
+    tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey>
+) {
+    return async function validateAccessTokenAndGetUser(authorizationHeader?: string): Promise<UserClass> {
+        const user = await extractAndVerifyBearerToken(
+            tokenVerificationMetadataWithPublicKeyPromise,
+            authorizationHeader
+        )
+        return new UserClass(user)
     }
 }
 
@@ -637,23 +365,26 @@ function orgNameMatches(orgName: string, orgMemberInfo: OrgMemberInfo) {
 
 async function extractAndVerifyBearerToken(
     tokenVerificationMetadataWithPublicKeyPromise: Promise<TokenVerificationMetadataWithPublicKey>,
-    authorizationHeader: string | undefined
+    authorizationHeader: string | undefined,
+    allowMissingBearerPrefix = false
 ) {
     const tokenVerificationMetadataWithPublicKey = await tokenVerificationMetadataWithPublicKeyPromise
 
     const { publicKey, tokenVerificationMetadata } = tokenVerificationMetadataWithPublicKey
 
-    const bearerToken = extractBearerToken(authorizationHeader)
+    const bearerToken = extractBearerToken(authorizationHeader, allowMissingBearerPrefix)
     return verifyToken(bearerToken, tokenVerificationMetadata, publicKey)
 }
 
-function extractBearerToken(authHeader?: string): string {
+function extractBearerToken(authHeader: string | undefined, allowMissingBearerPrefix: boolean = false): string {
     if (!authHeader) {
         throw new UnauthorizedException("No authorization header found.")
     }
 
     const authHeaderParts = authHeader.split(" ")
-    if (authHeaderParts.length !== 2 || authHeaderParts[0].toLowerCase() !== "bearer") {
+    if (authHeaderParts.length === 1 && allowMissingBearerPrefix) {
+        return authHeaderParts[0]
+    } else if (authHeaderParts.length !== 2 || authHeaderParts[0].toLowerCase() !== "bearer") {
         throw new UnauthorizedException("Invalid authorization header. Expected: Bearer {accessToken}")
     }
 
