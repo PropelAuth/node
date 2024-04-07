@@ -137,7 +137,8 @@ function wrapValidateAccessTokenAndGetUserClass(
     return async function validateAccessTokenAndGetUser(authorizationHeader?: string): Promise<UserClass> {
         const user = await extractAndVerifyBearerToken(
             tokenVerificationMetadataWithPublicKeyPromise,
-            authorizationHeader
+            authorizationHeader,
+            true
         )
         return new UserClass(user)
     }
