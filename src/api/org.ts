@@ -39,6 +39,7 @@ export type OrgQuery = {
     pageSize?: number
     pageNumber?: number
     orderBy?: "CREATED_AT_ASC" | "CREATED_AT_DESC" | "NAME"
+    name?: string
 }
 
 export type OrgQueryResponse = {
@@ -54,6 +55,7 @@ export function fetchOrgByQuery(authUrl: URL, integrationApiKey: string, query: 
         page_size: query.pageSize,
         page_number: query.pageNumber,
         order_by: query.orderBy,
+        name: query.name,
     }
     return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/query`, "POST", JSON.stringify(request)).then(
         (httpResponse) => {
