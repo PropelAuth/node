@@ -4,15 +4,12 @@ export {
     OrgQuery,
     OrgQueryResponse,
     AddUserToOrgRequest,
-    AddUserToOrgWithRolesRequest,
     ChangeUserRoleInOrgRequest,
-    ChangeUserRolesInOrgRequest
 } from "./api/org"
 export { TokenVerificationMetadata } from "./api/tokenVerificationMetadata"
 export {
     CreateUserRequest,
     InviteUserToOrgRequest,
-    InviteUserToOrgWithRolesRequest,
     UpdateUserEmailRequest,
     UpdateUserMetadataRequest,
     UserSignupQueryParams,
