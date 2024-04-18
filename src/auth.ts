@@ -1,4 +1,5 @@
 import * as jose from "jose"
+import { Organization } from "."
 import { AccessToken, createAccessToken, CreateAccessTokenRequest } from "./api/accessToken"
 import {
     ApiKeysCreateRequest,
@@ -77,7 +78,6 @@ import {
     CreatedOrg,
     CreatedUser,
     InternalUser,
-    Org,
     OrgApiKeyValidation,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
@@ -204,7 +204,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         )
     }
 
-    function fetchOrgWrapper(orgId: string): Promise<Org | null> {
+    function fetchOrgWrapper(orgId: string): Promise<Organization | null> {
         return fetchOrg(authUrl, integrationApiKey, orgId)
     }
 

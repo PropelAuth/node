@@ -47,6 +47,7 @@ export {
     InternalOrgMemberInfo,
     InternalUser,
     Org,
+    Organization,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
     toOrgIdToOrgMemberInfo,

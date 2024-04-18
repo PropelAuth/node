@@ -159,6 +159,20 @@ export type Org = {
     metadata: { [key: string]: any }
 }
 
+export type Organization = {
+    orgId: string
+    name: string
+    urlSafeOrgSlug: string
+    canSetupSaml: boolean
+    isSamlConfigured: boolean
+    isSamlInTestMode: boolean
+    maxUsers?: number
+    metadata?: { [key: string]: any }
+    domain?: string
+    domainAutojoin: boolean
+    domainRestrict: boolean
+}
+
 export type CreatedOrg = {
     orgId: string
     name: string
