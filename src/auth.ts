@@ -1,5 +1,4 @@
 import * as jose from "jose"
-import { Organization } from "."
 import { AccessToken, createAccessToken, CreateAccessTokenRequest } from "./api/accessToken"
 import {
     ApiKeysCreateRequest,
@@ -78,6 +77,7 @@ import {
     CreatedOrg,
     CreatedUser,
     InternalUser,
+    Organization,
     OrgApiKeyValidation,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
