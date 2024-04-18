@@ -77,7 +77,7 @@ import {
     CreatedOrg,
     CreatedUser,
     InternalUser,
-    Org,
+    Organization,
     OrgApiKeyValidation,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
@@ -204,7 +204,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         )
     }
 
-    function fetchOrgWrapper(orgId: string): Promise<Org | null> {
+    function fetchOrgWrapper(orgId: string): Promise<Organization | null> {
         return fetchOrg(authUrl, integrationApiKey, orgId)
     }
 

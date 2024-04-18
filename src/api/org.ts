@@ -6,13 +6,13 @@ import {
     UpdateOrgException,
 } from "../exceptions"
 import { httpRequest } from "../http"
-import { CreatedOrg, Org } from "../user"
+import { CreatedOrg, Org, Organization } from "../user"
 import { isValidId, parseSnakeCaseToCamelCase } from "../utils"
 
 const ENDPOINT_PATH = "/api/backend/v1/org"
 
 // GET
-export function fetchOrg(authUrl: URL, integrationApiKey: string, orgId: string): Promise<Org | null> {
+export function fetchOrg(authUrl: URL, integrationApiKey: string, orgId: string): Promise<Organization | null> {
     if (!isValidId(orgId)) {
         return Promise.resolve(null)
     }
