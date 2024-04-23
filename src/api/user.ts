@@ -278,6 +278,7 @@ export type InviteUserToOrgRequest = {
     orgId: string
     email: string
     role: string
+    additionalRoles?: string[]
 }
 
 export function inviteUserToOrg(
@@ -289,6 +290,7 @@ export function inviteUserToOrg(
         org_id: inviteUserToOrgRequest.orgId,
         email: inviteUserToOrgRequest.email,
         role: inviteUserToOrgRequest.role,
+        additional_roles: inviteUserToOrgRequest.additionalRoles ?? [],
     }
 
     return httpRequest(authUrl, integrationApiKey, `/api/backend/v1/invite_user`, "POST", JSON.stringify(body)).then(

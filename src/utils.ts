@@ -47,7 +47,7 @@ function isOrgMemberInfo(value: any) {
         value.hasOwnProperty("urlSafeOrgName") &&
         value.hasOwnProperty("orgMetadata") &&
         value.hasOwnProperty("userAssignedRole") &&
-        value.hasOwnProperty("userRoles") &&
+        value.hasOwnProperty("userInheritedRoles") &&
         value.hasOwnProperty("userPermissions")
     )
 }
@@ -72,8 +72,10 @@ function processKeys(obj: any): any {
                 value["orgMetadata"],
                 value["urlSafeOrgName"],
                 value["userAssignedRole"],
-                value["userRoles"],
-                value["userPermissions"]
+                value["userInheritedRoles"],
+                value["userPermissions"],
+                value["orgRoleStructure"],
+                value["additionalRoles"]
             )
         }
 
@@ -81,7 +83,7 @@ function processKeys(obj: any): any {
         if (key === "user_role") {
             newKey = "userAssignedRole"
         } else if (key === "inherited_user_roles_plus_current_role") {
-            newKey = "userRoles"
+            newKey = "userInheritedRoles"
         } else {
             newKey = camelCase(key)
         }

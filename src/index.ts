@@ -1,6 +1,11 @@
 export { AccessToken, CreateAccessTokenRequest } from "./api/accessToken"
 export { CreateMagicLinkRequest, MagicLink } from "./api/magicLink"
-export { OrgQuery, OrgQueryResponse } from "./api/org"
+export { 
+    OrgQuery,
+    OrgQueryResponse,
+    AddUserToOrgRequest,
+    ChangeUserRoleInOrgRequest,
+} from "./api/org"
 export { TokenVerificationMetadata } from "./api/tokenVerificationMetadata"
 export {
     CreateUserRequest,
@@ -50,6 +55,7 @@ export {
     Organization,
     OrgIdToOrgMemberInfo,
     OrgMemberInfo,
+    OrgRoleStructure,
     toOrgIdToOrgMemberInfo,
     toUser,
     User,
