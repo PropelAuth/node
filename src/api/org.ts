@@ -332,6 +332,7 @@ export type UpdateOrgRequest = {
     canJoinOnEmailDomainMatch?: boolean // In the backend, this is the `domain_autojoin` argument.
     membersMustHaveEmailDomainMatch?: boolean // In the backend, this is the `domain_restrict` argument.
     domain?: string
+    customRoleMappingId?: string
     // TODO: Add `require_2fa_by` optional argument.
 }
 
@@ -352,6 +353,7 @@ export function updateOrg(
         autojoin_by_domain: updateOrgRequest.canJoinOnEmailDomainMatch,
         restrict_to_domain: updateOrgRequest.membersMustHaveEmailDomainMatch,
         domain: updateOrgRequest.domain,
+        custom_role_mapping_id: updateOrgRequest.customRoleMappingId,
     }
     return httpRequest(
         authUrl,
