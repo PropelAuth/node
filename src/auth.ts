@@ -26,6 +26,7 @@ import {
     disallowOrgToSetupSamlConnection,
     fetchOrg,
     fetchOrgByQuery,
+    fetchCustomRoleMappings,
     OrgQuery,
     OrgQueryResponse,
     removeUserFromOrg,
@@ -88,6 +89,7 @@ import {
     UserMetadata,
 } from "./user"
 import { validateAuthUrl, validateOrgApiKey, validatePersonalApiKey } from "./validators"
+import { CustomRoleMappings } from "./customRoleMappings"
 
 export type BaseAuthOptions = {
     authUrl: string
@@ -210,6 +212,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
 
     function fetchOrgsByQueryWrapper(orgQuery: OrgQuery): Promise<OrgQueryResponse> {
         return fetchOrgByQuery(authUrl, integrationApiKey, orgQuery)
+    }
+
+    function fetchCustomRoleMappingsWrapper(): Promise<CustomRoleMappings> {
+        return fetchCustomRoleMappings(authUrl, integrationApiKey)
     }
 
     function fetchUsersByQueryWrapper(usersQuery: UsersQuery): Promise<UsersPagedResponse> {
@@ -375,6 +381,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         fetchBatchUserMetadataByUsernames,
         fetchOrg: fetchOrgWrapper,
         fetchOrgByQuery: fetchOrgsByQueryWrapper,
+        fetchCustomRoleMappings: fetchCustomRoleMappingsWrapper,
         fetchUsersByQuery: fetchUsersByQueryWrapper,
         fetchUsersInOrg: fetchUsersInOrgWrapper,
         // user management functions
