@@ -117,6 +117,7 @@ export type CreateOrgRequest = {
     enableAutoJoiningByDomain?: boolean
     membersMustHaveMatchingDomain?: boolean
     maxUsers?: number
+    customRoleMappingId?: string
 }
 
 type CreateOrgApiRequest = {
@@ -125,6 +126,7 @@ type CreateOrgApiRequest = {
     enable_auto_joining_by_domain?: boolean
     members_must_have_matching_domain?: boolean
     max_users?: number
+    custom_role_mapping_id?: string
 }
 
 export function createOrg(
@@ -138,6 +140,7 @@ export function createOrg(
         enableAutoJoiningByDomain = false,
         membersMustHaveMatchingDomain = false,
         maxUsers,
+        customRoleMappingId,
     } = createOrgRequest
     const request: CreateOrgApiRequest = {
         name,
@@ -149,6 +152,9 @@ export function createOrg(
     }
     if (maxUsers) {
         request["max_users"] = maxUsers
+    }
+    if (customRoleMappingId) {
+        request["custom_role_mapping_id"] = customRoleMappingId
     }
     return httpRequest(authUrl, integrationApiKey, `${ENDPOINT_PATH}/`, "POST", JSON.stringify(request)).then(
         (httpResponse) => {
