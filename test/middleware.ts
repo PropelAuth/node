@@ -2,6 +2,7 @@ import {
     ForbiddenException,
     InternalOrgMemberInfo,
     InternalUser,
+    OrgRoleStructure,
     TokenVerificationMetadata,
     toUser,
     UnauthorizedException,
@@ -195,7 +196,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole fails for invalid 
     expect(nock.isDone()).toBe(true)
 })
 
-test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole works with miniumumRole", async () => {
+test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole works with minimumRole", async () => {
     const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
     const { validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
