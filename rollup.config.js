@@ -27,7 +27,11 @@ export default {
     ],
     plugins: [
         peerDepsExternal(),
-        resolve({ extensions, exportConditions: ["browser", "worker"], browser: true }),
+        resolve({
+            extensions,
+            exportConditions: ["browser", "worker"],
+            browser: true,
+        }),
         commonjs(),
         typescript(),
     ],
