@@ -92,6 +92,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         fetchOrgByQuery: apis.fetchOrgByQuery,
         fetchUsersByQuery: apis.fetchUsersByQuery,
         fetchUsersInOrg: apis.fetchUsersInOrg,
+        fetchCustomRoleMappings: apis.fetchCustomRoleMappings,
         // user management functions
         createUser: apis.createUser,
         clearUserPassword: apis.clearUserPassword,
@@ -114,6 +115,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         changeUserRoleInOrg: apis.changeUserRoleInOrg,
         removeUserFromOrg: apis.removeUserFromOrg,
         updateOrg: apis.updateOrg,
+        subscribeOrgToRoleMapping: apis.subscribeOrgToRoleMapping,
         deleteOrg: apis.deleteOrg,
         allowOrgToSetupSamlConnection: apis.allowOrgToSetupSamlConnection,
         disallowOrgToSetupSamlConnection: apis.disallowOrgToSetupSamlConnection,
