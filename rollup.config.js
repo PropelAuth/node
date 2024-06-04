@@ -25,6 +25,15 @@ export default {
             sourcemap: true,
         },
     ],
-    plugins: [peerDepsExternal(), resolve({ extensions }), commonjs(), typescript()],
+    plugins: [
+        peerDepsExternal(),
+        resolve({
+            extensions,
+            exportConditions: ["browser", "worker"],
+            browser: true,
+        }),
+        commonjs(),
+        typescript(),
+    ],
     external: Object.keys(globals),
 }
