@@ -12,7 +12,7 @@
         "user"
     ],
     "dependencies": {
-        "@propelauth/node-apis": "file:.yalc/@propelauth/node-apis",
+        "@propelauth/node-apis": "^2.1.14",
         "jose": "^5.2.0"
     },
     "devDependencies": {
