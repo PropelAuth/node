@@ -105,6 +105,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         disableUser: apis.disableUser,
         enableUser: apis.enableUser,
         disableUser2fa: apis.disableUser2fa,
+        resendEmailConfirmation: apis.resendEmailConfirmation,
         enableUserCanCreateOrgs: apis.enableUserCanCreateOrgs,
         disableUserCanCreateOrgs: apis.disableUserCanCreateOrgs,
         // org management functions
