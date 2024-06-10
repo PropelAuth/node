@@ -43,6 +43,8 @@ export type {
     CreateMagicLinkRequest,
     CreateOrgRequest,
     CreateUserRequest,
+    CustomRoleMapping,
+    CustomRoleMappings,
     InternalOrgMemberInfo,
     InternalUser,
     InviteUserToOrgRequest,
