@@ -45,6 +45,8 @@
     },
     "main": "dist/index.js",
     "module": "dist/index.es.js",
+    "mainWorker": "dist/worker.js",
+    "moduleWorker": "dist/worker.es.js",
     "files": [
         "dist"
     ],

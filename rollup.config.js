@@ -11,29 +11,57 @@ const globals = {
     ...packageJson.devDependencies,
 }
 
-export default {
-    input: "src/index.ts",
-    output: [
-        {
-            file: packageJson.main,
-            format: "cjs",
-            sourcemap: true,
-        },
-        {
-            file: packageJson.module,
-            format: "esm",
-            sourcemap: true,
-        },
-    ],
-    plugins: [
-        peerDepsExternal(),
-        resolve({
-            extensions,
-            exportConditions: ["browser", "worker"],
-            browser: true,
-        }),
-        commonjs(),
-        typescript(),
-    ],
-    external: Object.keys(globals),
-}
+export default [
+    // Browser and worker supported build
+    {
+        input: "src/index.ts",
+        output: [
+            {
+                file: packageJson.mainWorker,
+                format: "cjs",
+                sourcemap: true,
+            },
+            {
+                file: packageJson.moduleWorker,
+                format: "esm",
+                sourcemap: true,
+            },
+        ],
+        plugins: [
+            peerDepsExternal(),
+            resolve({
+                extensions,
+                exportConditions: ["browser", "worker"],
+                browser: true,
+            }),
+            commonjs(),
+            typescript(),
+        ],
+        external: Object.keys(globals),
+    },
+    // Node build
+    {
+        input: "src/index.ts",
+        output: [
+            {
+                file: packageJson.main,
+                format: "cjs",
+                sourcemap: true,
+            },
+            {
+                file: packageJson.module,
+                format: "esm",
+                sourcemap: true,
+            },
+        ],
+        plugins: [
+            peerDepsExternal(),
+            resolve({
+                extensions,
+            }),
+            commonjs(),
+            typescript(),
+        ],
+        external: Object.keys(globals),
+    },
+]
