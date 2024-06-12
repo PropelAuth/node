@@ -14,6 +14,7 @@ export {
     MagicLinkCreationException,
     MigrateUserException,
     OrgMemberInfo,
+    OrgRoleStructure,
     RemoveUserFromOrgException,
     toOrgIdToOrgMemberInfo,
     toUser,
