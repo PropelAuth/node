@@ -12,7 +12,7 @@ jobs:
                   node-version: "16"
                   registry-url: "https://registry.npmjs.org"
             - run: npm install
-            - run: lerna run test
+            - run: lerna run build
             - run: lerna publish from-git
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
