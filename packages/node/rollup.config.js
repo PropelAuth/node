@@ -29,8 +29,6 @@ export default {
         peerDepsExternal(),
         resolve({
             extensions,
-            exportConditions: ["browser", "worker"],
-            browser: true,
         }),
         commonjs(),
         typescript(),
