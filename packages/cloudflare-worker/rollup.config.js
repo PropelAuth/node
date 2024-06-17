@@ -13,22 +13,18 @@ const globals = {
 
 export default {
     input: "src/index.ts",
-    output: [
-        {
-            file: packageJson.main,
-            format: "cjs",
-            sourcemap: true,
-        },
-        {
-            file: packageJson.module,
-            format: "esm",
-            sourcemap: true,
-        },
-    ],
+    output: {
+        exports: "named",
+        format: "es",
+        file: "dist/index.mjs",
+        sourcemap: true,
+    },
     plugins: [
         peerDepsExternal(),
         resolve({
             extensions,
+            exportConditions: ["browser", "worker"],
+            browser: true,
         }),
         commonjs(),
         typescript(),
