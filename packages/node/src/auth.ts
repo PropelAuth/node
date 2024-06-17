@@ -71,6 +71,8 @@ export function initBaseAuth(opts: BaseAuthOptions) {
     const validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions =
         wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(tokenVerificationMetadataWithPublicKeyPromise)
 
+    // Note: We exclude fetchTokenVerificationMetadata from the returned object
+    // because we have explicit usage of it above. Thus, it is not used in the returned object.
     const { fetchTokenVerificationMetadata, ...nodeApis } = apis
 
     return {
