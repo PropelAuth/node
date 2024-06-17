@@ -13,6 +13,6 @@ jobs:
                   registry-url: "https://registry.npmjs.org"
             - run: npm install
             - run: lerna run build
-            - run: lerna publish from-git
+            - run: lerna publish ${{ github.event.release.tag_name }}
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
