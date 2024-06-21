@@ -73,6 +73,9 @@ export type {
     UsersInOrgQuery,
     UsersPagedResponse,
     UsersQuery,
+    FetchPendingInvitesParams,
+    PendingInvitesPage,
+    PendingInvite,
 } from "@propelauth/node-apis"
 export {
     BaseAuthOptions,
