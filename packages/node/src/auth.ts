@@ -71,6 +71,10 @@ export function initBaseAuth(opts: BaseAuthOptions) {
     const validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions =
         wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(tokenVerificationMetadataWithPublicKeyPromise)
 
+    // Note: We exclude fetchTokenVerificationMetadata from the returned object
+    // because we have explicit usage of it above. Thus, it is not used in the returned object.
+    const { fetchTokenVerificationMetadata, ...nodeApis } = apis
+
     return {
         // validate functions
         validateAccessTokenAndGetUserClass,
@@ -80,56 +84,7 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         validateAccessTokenAndGetUserWithOrgInfoWithExactRole,
         validateAccessTokenAndGetUserWithOrgInfoWithPermission,
         validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions,
-        // fetching functions
-        fetchUserMetadataByUserId: apis.fetchUserMetadataByUserId,
-        fetchUserMetadataByEmail: apis.fetchUserMetadataByEmail,
-        fetchUserMetadataByUsername: apis.fetchUserMetadataByUsername,
-        fetchUserSignupQueryParams: apis.fetchUserSignupQueryParams,
-        fetchBatchUserMetadataByUserIds: apis.fetchBatchUserMetadataByUserIds,
-        fetchBatchUserMetadataByEmails: apis.fetchBatchUserMetadataByEmails,
-        fetchBatchUserMetadataByUsernames: apis.fetchBatchUserMetadataByUsernames,
-        fetchOrg: apis.fetchOrg,
-        fetchOrgByQuery: apis.fetchOrgByQuery,
-        fetchUsersByQuery: apis.fetchUsersByQuery,
-        fetchUsersInOrg: apis.fetchUsersInOrg,
-        fetchCustomRoleMappings: apis.fetchCustomRoleMappings,
-        // user management functions
-        createUser: apis.createUser,
-        clearUserPassword: apis.clearUserPassword,
-        updateUserMetadata: apis.updateUserMetadata,
-        updateUserEmail: apis.updateUserEmail,
-        updateUserPassword: apis.updateUserPassword,
-        createMagicLink: apis.createMagicLink,
-        createAccessToken: apis.createAccessToken,
-        migrateUserFromExternalSource: apis.migrateUserFromExternalSource,
-        deleteUser: apis.deleteUser,
-        disableUser: apis.disableUser,
-        enableUser: apis.enableUser,
-        disableUser2fa: apis.disableUser2fa,
-        resendEmailConfirmation: apis.resendEmailConfirmation,
-        enableUserCanCreateOrgs: apis.enableUserCanCreateOrgs,
-        disableUserCanCreateOrgs: apis.disableUserCanCreateOrgs,
-        // org management functions
-        createOrg: apis.createOrg,
-        addUserToOrg: apis.addUserToOrg,
-        changeUserRoleInOrg: apis.changeUserRoleInOrg,
-        removeUserFromOrg: apis.removeUserFromOrg,
-        updateOrg: apis.updateOrg,
-        subscribeOrgToRoleMapping: apis.subscribeOrgToRoleMapping,
-        deleteOrg: apis.deleteOrg,
-        allowOrgToSetupSamlConnection: apis.allowOrgToSetupSamlConnection,
-        disallowOrgToSetupSamlConnection: apis.disallowOrgToSetupSamlConnection,
-        inviteUserToOrg: apis.inviteUserToOrg,
-        // api keys functions
-        fetchApiKey: apis.fetchApiKey,
-        fetchCurrentApiKeys: apis.fetchCurrentApiKeys,
-        fetchArchivedApiKeys: apis.fetchArchivedApiKeys,
-        createApiKey: apis.createApiKey,
-        updateApiKey: apis.updateApiKey,
-        deleteApiKey: apis.deleteApiKey,
-        validateApiKey: apis.validateApiKey,
-        validatePersonalApiKey: apis.validatePersonalApiKey,
-        validateOrgApiKey: apis.validateOrgApiKey,
+        ...nodeApis,
     }
 }
 
