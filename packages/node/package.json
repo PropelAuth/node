@@ -43,11 +43,24 @@
         "test": "jest --silent",
         "prepublishOnly": "npm run build"
     },
-    "main": "dist/index.js",
-    "module": "dist/index.es.js",
+    "main": "dist/node/cjs/index.js",
+    "module": "dist/node/esm/index.js",
     "files": [
         "dist"
     ],
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "bun": "./dist/browser/index.js",
+            "deno": "./dist/browser/index.js",
+            "browser": "./dist/browser/index.js",
+            "worker": "./dist/browser/index.js",
+            "workerd": "./dist/browser/index.js",
+            "import": "./dist/node/esm/index.js",
+            "require": "./dist/node/cjs/index.js"
+        },
+        "./package.json": "./package.json"
+    },
     "jest": {
         "testMatch": [
             "**/test/*.ts"
