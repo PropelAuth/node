@@ -1,5 +1,11 @@
-export { initAuth, AuthOptions, AuthHeader } from "./auth"
-export { handleError, RequriedOrgInfo } from "@propelauth/node"
+export {
+    initAuth,
+    AuthOptions,
+    AuthHeader,
+    handleError,
+    RequiredOrgInfo,
+    RequiredOrgInfo as RequriedOrgInfo,
+} from "./auth"
 export type { HandleErrorOptions, HandleErrorResponse } from "@propelauth/node"
 export {
     OrgQueryResponse,
@@ -14,7 +20,7 @@ export {
     MagicLink,
     CreateAccessTokenRequest,
     AccessToken,
-} from "@propelauth/node"
+} from "@propelauth/node-apis"
 export {
     ApiKeyValidateException,
     ApiKeyDeleteException,
@@ -32,7 +38,7 @@ export {
     UnauthorizedException,
     UpdateUserEmailException,
     UpdateUserMetadataException,
-} from "@propelauth/node"
+} from "@propelauth/node-apis"
 export {
     User,
     Org,
@@ -44,4 +50,4 @@ export {
     InternalUser,
     toOrgIdToOrgMemberInfo,
     UserMetadata,
-} from "@propelauth/node"
+} from "@propelauth/node-apis"
