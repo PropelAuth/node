@@ -11,9 +11,9 @@ import {
     toUser,
     UnauthorizedException,
     User,
+    RequiredOrgInfo,
 } from "../src"
 import * as jose from "jose"
-import { RequriedOrgInfo as RequiredOrgInfo } from "@propelauth/node"
 
 const AUTH_URL = "https://auth.example.com"
 const ALGO = "RS256"
