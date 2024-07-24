@@ -5,8 +5,9 @@ export {
     handleError,
     RequiredOrgInfo,
     RequiredOrgInfo as RequriedOrgInfo,
+    HandleErrorOptions,
+    HandleErrorResponse,
 } from "./auth"
-export type { HandleErrorOptions, HandleErrorResponse } from "@propelauth/node"
 export {
     OrgQueryResponse,
     OrgQuery,
