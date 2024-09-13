@@ -39,6 +39,7 @@ export {
     UnauthorizedException,
     UpdateUserEmailException,
     UpdateUserMetadataException,
+    RevokePendingOrgInviteRequest
 } from "@propelauth/node-apis"
 export {
     User,
