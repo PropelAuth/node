@@ -4,7 +4,7 @@
         "type": "git",
         "url": "https://github.com/PropelAuth/node"
     },
-    "version": "2.1.22",
+    "version": "2.1.23",
     "license": "MIT",
     "keywords": [
         "auth",
@@ -12,7 +12,7 @@
         "user"
     ],
     "dependencies": {
-        "@propelauth/node-apis": "^2.1.21",
+        "@propelauth/node-apis": "^2.1.22",
         "jose": "^5.2.0"
     },
     "devDependencies": {
