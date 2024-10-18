@@ -15,6 +15,7 @@ export {
     UsersInOrgQuery,
     UsersPagedResponse,
     CreateUserRequest,
+    CreateSamlConnectionLinkResponse,
     UpdateUserMetadataRequest,
     UpdateUserEmailRequest,
     CreateMagicLinkRequest,
@@ -39,7 +40,7 @@ export {
     UnauthorizedException,
     UpdateUserEmailException,
     UpdateUserMetadataException,
-    RevokePendingOrgInviteRequest
+    RevokePendingOrgInviteRequest,
 } from "@propelauth/node-apis"
 export {
     User,

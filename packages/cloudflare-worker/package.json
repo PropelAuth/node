@@ -57,7 +57,7 @@
         }
     },
     "dependencies": {
-        "@propelauth/node-apis": "^2.1.22",
+        "@propelauth/node-apis": "^2.1.24",
         "jose": "^5.2.0"
     }
 }

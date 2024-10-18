@@ -9,6 +9,7 @@ export {
     BadRequestException,
     ChangeUserRoleInOrgException,
     CreateOrgException,
+    CreateSamlConnectionLinkResponse,
     CreateUserException,
     ForbiddenException,
     MagicLinkCreationException,
@@ -76,7 +77,7 @@ export type {
     FetchPendingInvitesParams,
     PendingInvitesPage,
     PendingInvite,
-    RevokePendingOrgInviteRequest
+    RevokePendingOrgInviteRequest,
 } from "@propelauth/node-apis"
 export {
     BaseAuthOptions,
