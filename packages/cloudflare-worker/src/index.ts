@@ -41,6 +41,9 @@ export {
     UpdateUserEmailException,
     UpdateUserMetadataException,
     RevokePendingOrgInviteRequest,
+    FetchSamlSpMetadataResponse,
+    SetSamlIdpMetadataRequest,
+    IdpProvider,
 } from "@propelauth/node-apis"
 export {
     User,

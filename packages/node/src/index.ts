@@ -78,6 +78,9 @@ export type {
     PendingInvitesPage,
     PendingInvite,
     RevokePendingOrgInviteRequest,
+    FetchSamlSpMetadataResponse,
+    SetSamlIdpMetadataRequest,
+    IdpProvider,
 } from "@propelauth/node-apis"
 export {
     BaseAuthOptions,
