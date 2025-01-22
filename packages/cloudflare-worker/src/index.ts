@@ -25,6 +25,7 @@ export {
 } from "@propelauth/node-apis"
 export {
     ApiKeyValidateException,
+    ApiKeyValidateRateLimitedException,
     ApiKeyDeleteException,
     ApiKeyUpdateException,
     ApiKeyCreateException,
