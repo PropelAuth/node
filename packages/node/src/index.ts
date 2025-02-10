@@ -71,6 +71,8 @@ export type {
     UserAndOrgMemberInfo,
     UserMetadata,
     UserProperties,
+    UserInOrgMetadata,
+    UsersInOrgPagedResponse,
     UserSignupQueryParams,
     UsersInOrgQuery,
     UsersPagedResponse,
