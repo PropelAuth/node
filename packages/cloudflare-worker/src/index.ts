@@ -56,5 +56,7 @@ export {
     UserAndOrgMemberInfo,
     InternalUser,
     toOrgIdToOrgMemberInfo,
+    UserInOrgMetadata,
+    UsersInOrgPagedResponse,
     UserMetadata,
 } from "@propelauth/node-apis"
