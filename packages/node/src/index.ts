@@ -16,6 +16,7 @@ export {
     MagicLinkCreationException,
     MigrateUserException,
     OrgMemberInfo,
+    RateLimitedException,
     RemoveUserFromOrgException,
     toOrgIdToOrgMemberInfo,
     toUser,

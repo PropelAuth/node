@@ -41,6 +41,7 @@ export {
     UnauthorizedException,
     UpdateUserEmailException,
     UpdateUserMetadataException,
+    RateLimitedException,
     RevokePendingOrgInviteRequest,
     FetchSamlSpMetadataResponse,
     SetSamlIdpMetadataRequest,
