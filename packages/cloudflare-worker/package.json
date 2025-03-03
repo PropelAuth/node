@@ -4,7 +4,7 @@
         "type": "git",
         "url": "https://github.com/PropelAuth/cloudflare-worker"
     },
-    "version": "2.1.29",
+    "version": "2.1.30",
     "license": "MIT",
     "keywords": [
         "auth",
@@ -57,7 +57,7 @@
         }
     },
     "dependencies": {
-        "@propelauth/node-apis": "^2.1.29",
+        "@propelauth/node-apis": "^2.1.30",
         "jose": "^5.2.0"
     }
 }
