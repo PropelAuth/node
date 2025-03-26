@@ -4,7 +4,7 @@
   </a>
 </p>
 
-# PropelAuth Node Library
+# PropelAuth Cloudflare Library
 
 A Javascript library for managing authentication, backed by [PropelAuth](https://www.propelauth.com?ref=github).  
 
@@ -14,38 +14,39 @@ Your frontend gets a beautiful, safe, and customizable login screen. Your backen
 
 ## Documentation
 
-- Full reference this library is [here](https://docs.propelauth.com/reference/backend-apis/node)
+- Full reference this library is [here](https://docs.propelauth.com/reference/backend-apis/cloudflare-workers)
 - Getting started guides for PropelAuth are [here](https://docs.propelauth.com/)
 
 ## Installation
 
 ```shell
-npm install @propelauth/node
+npm install @propelauth/cloudflare-worker
 ```
 
 ## Initialize
 
-`initBaseAuth` performs a one-time initialization of the library.
+`initAuth` performs a one-time initialization of the library.
 It will verify your `apiKey` is correct and fetch the metadata needed to verify access tokens in [validateAccessTokenAndGetUserClass](#protect-api-routes).
 
+You can find the `authUrl`, `apiKey`, and `verifierKey` in the **Backend Integration** section in your PropelAuth dashboard.
 
 ```typescript
-import { initBaseAuth } from '@propelauth/node';
+import { initAuth } from '@propelauth/cloudflare-worker'
 
 const {
     validateAccessTokenAndGetUserClass,
-    fetchUserMetadataByUserId,
     // ...
-} = initBaseAuth({
-    authUrl: "REPLACE_ME",
-    apiKey: "REPLACE_ME",
-});
+} = initAuth({
+    authUrl: 'REPLACE_ME',
+    apiKey: 'REPLACE_ME',
+    verifierKey: 'REPLACE_ME',
+})
 ```
 
 ## Protect API Routes
 
 After initializing auth, you can verify access tokens by passing it in the Authorization header (formatted `Bearer TOKEN`) to `validateAccessTokenAndGetUserClass`.
-You can see more information about the User Class [here](https://docs.propelauth.com/reference/backend-apis/node#user-class).
+You can see more information about the User Class [here](https://docs.propelauth.com/reference/backend-apis/cloudflare-workers#user-class).
 
 ```ts
 const authorizationHeader = // Get the Authorization header from an HTTP request
@@ -60,7 +61,7 @@ try {
 
 ## Authorization / Organizations
 
-You can also verify which organizations the user is in, and which roles and permissions they have in each organization all through the [User Class](https://docs.propelauth.com/reference/backend-apis/node#user-class)
+You can also verify which organizations the user is in, and which roles and permissions they have in each organization all through the [User Class](https://docs.propelauth.com/reference/backend-apis/cloudflare-workers#user-class).
 
 ### Check Org Membership
 
@@ -125,7 +126,6 @@ try {
     console.log(`Unauthorized request ${err}`);
 }
 ```
----
 
 ## Calling Backend APIs
 
@@ -135,6 +135,7 @@ You can also use the library to call the PropelAuth APIs directly, allowing you 
 const auth = initAuth({
     authUrl: 'REPLACE_ME',
     apiKey: 'REPLACE_ME',
+    verifierKey: 'REPLACE_ME',
 })
 
 const magicLink = await auth.createMagicLink({
@@ -142,7 +143,8 @@ const magicLink = await auth.createMagicLink({
 })
 ```
 
----
+See the [API Reference](https://docs.propelauth.com/reference) for more information.
+
 
 ## Questions?
 
