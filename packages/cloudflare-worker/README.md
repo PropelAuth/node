@@ -6,7 +6,7 @@
 
 # PropelAuth Cloudflare Library
 
-A Javascript library for managing authentication, backed by [PropelAuth](https://www.propelauth.com?ref=github).  
+A Javascript library for managing authentication, backed by [PropelAuth](https://www.propelauth.com?ref=github). While this library was built specifically with Cloudflare Workers in mind, it can also be used in edge/serverless contexts.
 
 [PropelAuth](https://www.propelauth.com?ref=github) makes it easy to add authentication and authorization to your B2B/multi-tenant application.
 
