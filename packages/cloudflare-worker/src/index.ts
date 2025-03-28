@@ -22,6 +22,8 @@ export {
     MagicLink,
     CreateAccessTokenRequest,
     AccessToken,
+    MigrateUserFromExternalSourceRequest,
+    MigrateUserPasswordRequest
 } from "@propelauth/node-apis"
 export {
     ApiKeyValidateException,
@@ -37,6 +39,7 @@ export {
     ForbiddenException,
     MagicLinkCreationException,
     MigrateUserException,
+    MigrateUserPasswordException,
     UserNotFoundException,
     UnauthorizedException,
     UpdateUserEmailException,
