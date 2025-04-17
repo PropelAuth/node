@@ -24,7 +24,6 @@ export {
     AccessToken,
     MigrateUserFromExternalSourceRequest,
     MigrateUserPasswordRequest,
-    StepUpMfaGrantType,
     VerifyTotpChallengeRequest,
     StepUpMfaVerifyTotpResponse,
     VerifyStepUpGrantRequest,
