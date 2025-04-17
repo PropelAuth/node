@@ -29,6 +29,11 @@ export {
     UpdateUserPasswordException,
     UserClass,
     UserNotFoundException,
+    InvalidRequestFieldsException,
+    FeatureGatedException,
+    MfaNotEnabledException,
+    IncorrectMfaCodeException,
+    RevokePendingOrgInviteException,
 } from "@propelauth/node-apis"
 export type {
     AccessToken,
@@ -87,6 +92,11 @@ export type {
     FetchSamlSpMetadataResponse,
     SetSamlIdpMetadataRequest,
     IdpProvider,
+    StepUpMfaGrantType,
+    VerifyTotpChallengeRequest,
+    StepUpMfaVerifyTotpResponse,
+    VerifyStepUpGrantRequest,
+    StepUpMfaVerifyGrantResponse,
 } from "@propelauth/node-apis"
 export {
     BaseAuthOptions,

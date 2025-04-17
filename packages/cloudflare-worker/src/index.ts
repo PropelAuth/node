@@ -23,7 +23,11 @@ export {
     CreateAccessTokenRequest,
     AccessToken,
     MigrateUserFromExternalSourceRequest,
-    MigrateUserPasswordRequest
+    MigrateUserPasswordRequest,
+    VerifyTotpChallengeRequest,
+    StepUpMfaVerifyTotpResponse,
+    VerifyStepUpGrantRequest,
+    StepUpMfaVerifyGrantResponse,
 } from "@propelauth/node-apis"
 export {
     ApiKeyValidateException,
@@ -45,6 +49,11 @@ export {
     UpdateUserEmailException,
     UpdateUserMetadataException,
     RateLimitedException,
+    InvalidRequestFieldsException,
+    FeatureGatedException,
+    MfaNotEnabledException,
+    IncorrectMfaCodeException,
+    RevokePendingOrgInviteException,
     RevokePendingOrgInviteRequest,
     FetchSamlSpMetadataResponse,
     SetSamlIdpMetadataRequest,
