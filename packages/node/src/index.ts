@@ -109,6 +109,7 @@ export type {
     MfaTotpType,
     FetchUserMfaMethodsResponse,
     ApiKeyUsageQueryRequest,
+    ApiKeyUsageQueryResponse,
     ApiKeysImportRequest,
 } from "@propelauth/node-apis"
 export {
