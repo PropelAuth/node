@@ -28,6 +28,14 @@ export {
     StepUpMfaVerifyTotpResponse,
     VerifyStepUpGrantRequest,
     StepUpMfaVerifyGrantResponse,
+    SendSmsMfaCodeRequest,
+    SendSmsMfaCodeRequestResponse,
+    VerifySmsChallengeRequest,
+    VerifySmsChallengeResponse,
+    InviteUserToOrgByUserIdRequest,
+    FetchUserMfaMethodsResponse,
+    ApiKeyUsageQueryRequest,
+    ApiKeysImportRequest,
 } from "@propelauth/node-apis"
 export {
     ApiKeyValidateException,
@@ -58,6 +66,7 @@ export {
     FetchSamlSpMetadataResponse,
     SetSamlIdpMetadataRequest,
     IdpProvider,
+    ApiKeyImportException
 } from "@propelauth/node-apis"
 export {
     User,
@@ -72,4 +81,8 @@ export {
     UserInOrgMetadata,
     UsersInOrgPagedResponse,
     UserMetadata,
+    Employee,
+    MfaPhoneType,
+    MfaPhones,
+    MfaTotpType,
 } from "@propelauth/node-apis"
