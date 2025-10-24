@@ -35,6 +35,7 @@ export {
     InviteUserToOrgByUserIdRequest,
     FetchUserMfaMethodsResponse,
     ApiKeyUsageQueryRequest,
+    ApiKeyUsageQueryResponse,
     ApiKeysImportRequest,
 } from "@propelauth/node-apis"
 export {
