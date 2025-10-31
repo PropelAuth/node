@@ -34,6 +34,7 @@ export {
     MfaNotEnabledException,
     IncorrectMfaCodeException,
     RevokePendingOrgInviteException,
+    ApiKeyImportException,
 } from "@propelauth/node-apis"
 export type {
     AccessToken,
@@ -97,6 +98,19 @@ export type {
     StepUpMfaVerifyTotpResponse,
     VerifyStepUpGrantRequest,
     StepUpMfaVerifyGrantResponse,
+    Employee,
+    SendSmsMfaCodeRequest,
+    SendSmsMfaCodeRequestResponse,
+    VerifySmsChallengeRequest,
+    VerifySmsChallengeResponse,
+    InviteUserToOrgByUserIdRequest,
+    MfaPhoneType,
+    MfaPhones,
+    MfaTotpType,
+    FetchUserMfaMethodsResponse,
+    ApiKeyUsageQueryRequest,
+    ApiKeyUsageQueryResponse,
+    ApiKeysImportRequest,
 } from "@propelauth/node-apis"
 export {
     BaseAuthOptions,
