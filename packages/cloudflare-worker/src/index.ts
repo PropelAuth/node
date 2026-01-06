@@ -67,7 +67,8 @@ export {
     FetchSamlSpMetadataResponse,
     SetSamlIdpMetadataRequest,
     IdpProvider,
-    ApiKeyImportException
+    ApiKeyImportException,
+    MigrateOrgToIsolatedException
 } from "@propelauth/node-apis"
 export {
     User,

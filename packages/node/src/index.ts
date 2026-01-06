@@ -35,6 +35,7 @@ export {
     IncorrectMfaCodeException,
     RevokePendingOrgInviteException,
     ApiKeyImportException,
+    MigrateOrgToIsolatedException
 } from "@propelauth/node-apis"
 export type {
     AccessToken,
