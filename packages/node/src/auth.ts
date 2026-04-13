@@ -17,6 +17,7 @@ import {
     TokenVerificationMetadataWithPublicKey,
 } from "./tokenVerificationMetadata"
 import { validateAuthUrl } from "./validators"
+import { createRouteHandler } from "./routeHandlers"
 
 export type BaseAuthOptions = {
     authUrl: string
@@ -71,6 +72,9 @@ export function initBaseAuth(opts: BaseAuthOptions) {
     const validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions =
         wrapValidateAccessTokenAndGetUserWithOrgInfoWithAllPermissions(tokenVerificationMetadataWithPublicKeyPromise)
 
+    const authUrlOrigin = `${authUrl.protocol}//${authUrl.host}`
+    const { handleAuthRequest } = createRouteHandler(authUrlOrigin, integrationApiKey, validateAccessTokenAndGetUser, validateAccessTokenAndGetUserClass)
+
     // Note: We exclude fetchTokenVerificationMetadata from the returned object
     // because we have explicit usage of it above. Thus, it is not used in the returned object.
     const { fetchTokenVerificationMetadata, ...nodeApis } = apis
@@ -84,6 +88,8 @@ export function initBaseAuth(opts: BaseAuthOptions) {
         validateAccessTokenAndGetUserWithOrgInfoWithExactRole,
         validateAccessTokenAndGetUserWithOrgInfoWithPermission,
         validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions,
+        // route handler
+        handleAuthRequest,
         ...nodeApis,
     }
 }

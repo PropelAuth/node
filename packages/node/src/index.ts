@@ -16,7 +16,8 @@ export {
     MagicLinkCreationException,
     MigrateUserException,
     MigrateUserPasswordException,
-    OrgMemberInfo,
+  OrgMemberInfo,
+    Organization,
     RateLimitedException,
     RemoveUserFromOrgException,
     toOrgIdToOrgMemberInfo,
@@ -35,9 +36,10 @@ export {
     IncorrectMfaCodeException,
     RevokePendingOrgInviteException,
     ApiKeyImportException,
+    OrgRoleStructure
 } from "@propelauth/node-apis"
 export type {
-    AccessToken,
+    AccessToken,  
     AddUserToOrgRequest,
     ApiKeyFull,
     ApiKeyNew,
@@ -120,3 +122,12 @@ export {
     initBaseAuth,
     RequiredOrgInfo as RequriedOrgInfo,
 } from "./auth"
+export {
+    ACCESS_TOKEN_COOKIE_NAME,
+    REFRESH_TOKEN_COOKIE_NAME,
+    ACTIVE_ORG_ID_COOKIE_NAME,
+    RETURN_TO_PATH_COOKIE_NAME,
+    STATE_COOKIE_NAME,
+} from "./routeHandlers"
+export { createRouteHandler, getAccessTokenFromCookies } from "./routeHandlers"
+export type { AuthRequestParams, AuthResponse } from "./routeHandlers"
