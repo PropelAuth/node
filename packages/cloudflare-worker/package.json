@@ -26,17 +26,18 @@
         "rollup": "^2.52.7",
         "rollup-plugin-peer-deps-external": "^2.2.4",
         "ts-jest": "^27.0.5",
+        "tslib": "^2.8.1",
         "typescript": "^4.2.4",
         "uuid": "^8.3.2"
     },
     "scripts": {
         "type-check": "tsc --noEmit",
-        "type-check:watch": "npm run type-check -- --watch",
+        "type-check:watch": "pnpm run type-check -- --watch",
         "build:types": "tsc --emitDeclarationOnly",
         "build:js": "rollup -c",
-        "build": "npm run test && npm run build:types && npm run build:js",
+        "build": "pnpm run test && pnpm run build:types && pnpm run build:js",
         "test": "jest --silent",
-        "prepublishOnly": "npm run build"
+        "prepublishOnly": "pnpm run build"
     },
     "module": "dist/index.mjs",
     "main": "dist/index.mjs",
