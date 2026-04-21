@@ -2,7 +2,7 @@
     "name": "@propelauth/cloudflare-worker",
     "repository": {
         "type": "git",
-        "url": "https://github.com/PropelAuth/cloudflare-worker"
+        "url": "https://github.com/PropelAuth/node"
     },
     "version": "2.1.35",
     "license": "MIT",
