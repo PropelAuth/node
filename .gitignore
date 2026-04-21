@@ -343,5 +343,3 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/intellij+all,vim,emacs,windows,macos,node
 .yalc
 yalc.lock
-pnpm-lock.yaml
-pnpm-workspace.yaml
