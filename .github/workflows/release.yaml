@@ -2,18 +2,28 @@ name: npm publish
 on:
     release:
         types: [published]
+
+permissions:
+    contents: read
+    id-token: write
+
 jobs:
-    build:
+    publish:
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
-            - uses: actions/setup-node@v2
+            - uses: actions/checkout@v6
               with:
-                  node-version: "16"
+                  persist-credentials: false
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: "24"
                   registry-url: "https://registry.npmjs.org"
-            - run: npm install
-            - run: lerna run build
-            - run: lerna version -y ${{ github.event.release.tag_name }}
-            - run: lerna publish from-package -y
-              env:
-                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+            - uses: pnpm/action-setup@v4
+              with:
+                  version: 10
+
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm -r run build
+            - run: pnpm -r publish --no-git-checks
