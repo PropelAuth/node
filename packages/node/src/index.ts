@@ -36,6 +36,26 @@ export {
     RevokePendingOrgInviteException,
     ApiKeyImportException,
 } from "@propelauth/node-apis"
+export {
+    ReengagementReportInterval,
+    ChampionReportInterval,
+    ChurnReportInterval, 
+    GrowthReportInterval,
+    AttritionReportInterval,
+    TopInviterReportInterval,
+    ChartMetric,
+    ChartMetricCadence,
+} from "@propelauth/node-apis"
+export type {
+    ReportPagination,
+    UserReport,
+    UserReportRecord,
+    OrgReport,
+    OrgReportRecord,
+    UserOrgMembershipForReport,
+    ChartData,
+    ChartDataPoint,
+} from "@propelauth/node-apis"
 export type {
     AccessToken,
     AddUserToOrgRequest,
