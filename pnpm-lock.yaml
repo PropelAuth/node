@@ -11,8 +11,8 @@ importers:
   packages/cloudflare-worker:
     dependencies:
       '@propelauth/node-apis':
-        specifier: ^2.1.35
-        version: 2.1.35
+        specifier: ^2.1.36
+        version: 2.1.36
       jose:
         specifier: ^5.10.0
         version: 5.10.0
@@ -72,8 +72,8 @@ importers:
   packages/node:
     dependencies:
       '@propelauth/node-apis':
-        specifier: ^2.1.35
-        version: 2.1.35
+        specifier: ^2.1.36
+        version: 2.1.36
       jose:
         specifier: ^5.10.0
         version: 5.10.0
@@ -372,8 +372,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@propelauth/node-apis@2.1.35':
-    resolution: {integrity: sha512-eXnC+bZwo9CD1xNUT8kAYpOVs/CiDsGgmYemSH1ULWKAQ7Nhck7um7xl6oU0NkCf/REZK01Gt//EN3fc5x0Zmg==}
+  '@propelauth/node-apis@2.1.36':
+    resolution: {integrity: sha512-ynab7KabIGHLuHIf7ik/es+uh6GL7mJOoM8HkFswSHdyx7NsT+MiKth3yr83QVFmozAJCrVV1WHhFQDQ50THTw==}
 
   '@rollup/plugin-commonjs@19.0.2':
     resolution: {integrity: sha512-gBjarfqlC7qs0AutpRW/hrFNm+cd2/QKxhwyFa+srbg1oX7rDsEU3l+W7LAUhsAp9mPJMAkXDhLbQaVwEaE8bA==}
@@ -2051,7 +2051,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@propelauth/node-apis@2.1.35': {}
+  '@propelauth/node-apis@2.1.36': {}
 
   '@rollup/plugin-commonjs@19.0.2(rollup@2.80.0)':
     dependencies:
