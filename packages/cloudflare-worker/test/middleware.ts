@@ -442,6 +442,60 @@ test("validateAuthHeaderAndGetUserWithOrgInfoWithAllPermissions works with permi
 
 // helper functions
 
+test("fallbackVerifierKey accepts tokens signed by the fallback key", async () => {
+    const current = await generateRsaKeyPair()
+    const previous = await generateRsaKeyPair()
+    const { validateAuthHeaderAndGetUser } = initAuth({
+        authUrl: AUTH_URL,
+        apiKey: "",
+        verifierKey: current.publicKey,
+        fallbackVerifierKey: previous.publicKey,
+    })
+
+    const userA = randomInternalUser()
+    const userB = randomInternalUser()
+    const tokenFromCurrent = await createAccessToken({ internalUser: userA, privateKey: current.privateKey })
+    const tokenFromPrevious = await createAccessToken({ internalUser: userB, privateKey: previous.privateKey })
+
+    expect(await validateAuthHeaderAndGetUser(`Bearer ${tokenFromCurrent}`)).toEqual(toUser(userA))
+    expect(await validateAuthHeaderAndGetUser(`Bearer ${tokenFromPrevious}`)).toEqual(toUser(userB))
+})
+
+test("fallbackVerifierKey rejects tokens signed by neither key", async () => {
+    const current = await generateRsaKeyPair()
+    const previous = await generateRsaKeyPair()
+    const other = await generateRsaKeyPair()
+    const { validateAuthHeaderAndGetUser } = initAuth({
+        authUrl: AUTH_URL,
+        apiKey: "",
+        verifierKey: current.publicKey,
+        fallbackVerifierKey: previous.publicKey,
+    })
+
+    const accessToken = await createAccessToken({ internalUser: randomInternalUser(), privateKey: other.privateKey })
+
+    await expect(validateAuthHeaderAndGetUser(`Bearer ${accessToken}`)).rejects.toThrow(UnauthorizedException)
+})
+
+test("fallbackVerifierKey reports expiry for an expired token signed by the fallback key", async () => {
+    const current = await generateRsaKeyPair()
+    const previous = await generateRsaKeyPair()
+    const { validateAuthHeaderAndGetUser } = initAuth({
+        authUrl: AUTH_URL,
+        apiKey: "",
+        verifierKey: current.publicKey,
+        fallbackVerifierKey: previous.publicKey,
+    })
+
+    const accessToken = await createAccessToken({
+        internalUser: randomInternalUser(),
+        privateKey: previous.privateKey,
+        expiresIn: "1 minute ago",
+    })
+
+    await expect(validateAuthHeaderAndGetUser(`Bearer ${accessToken}`)).rejects.toThrow(/"exp"/)
+})
+
 async function createAccessToken({
     internalUser,
     privateKey,

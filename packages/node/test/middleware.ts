@@ -8,20 +8,21 @@ import {
     UnauthorizedException,
     UnexpectedException,
 } from "@propelauth/node-apis"
-import { createPrivateKey, generateKeyPair } from "crypto"
+import { createPrivateKey, createPublicKey, generateKeyPair } from "crypto"
 import * as jose from "jose"
 import nock from "nock"
 import { v4 as uuid } from "uuid"
 import { initBaseAuth } from "../src"
 import { RequiredOrgInfo } from "../src/auth"
 
-const BASE_API_URL = "https://propelauth-api.com"
 const AUTH_HOSTNAME = "auth.example.com"
 const AUTH_URL = "https://" + AUTH_HOSTNAME
 const ALGO = "RS256"
+const JWKS_PATH = "/.well-known/jwks.json"
 
 afterEach(() => {
     jest.useRealTimers()
+    nock.cleanAll()
 })
 
 test("bad authUrl is rejected", async () => {
@@ -34,11 +35,11 @@ test("bad authUrl is rejected", async () => {
 })
 
 test("validateAccessTokenAndGetUser gets correct user", async () => {
-    const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey, privateKey, kid } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL + "/", apiKey })
 
     const internalUser = randomInternalUser()
-    const accessToken = await createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey, kid })
 
     const authHeader = `Bearer ${accessToken}`
 
@@ -71,15 +72,11 @@ test("when manualTokenVerificationMetadata is specified, no fetch is made", asyn
 })
 
 test("validateAccessTokenAndGetUser rejects expired access tokens", async () => {
-    jest.useFakeTimers("modern")
-    const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey, privateKey, kid } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL + "/", apiKey })
 
     const internalUser = randomInternalUser()
-    const accessToken = await createAccessToken({ internalUser, expiresIn: "30m", privateKey })
-
-    // 31 minutes
-    jest.advanceTimersByTime(1000 * 60 * 31)
+    const accessToken = await createAccessToken({ internalUser, expiresIn: "1 minute ago", privateKey, kid })
 
     const authHeader = `Bearer ${accessToken}`
 
@@ -89,7 +86,7 @@ test("validateAccessTokenAndGetUser rejects expired access tokens", async () => 
 })
 
 test("validateAccessTokenAndGetUser rejects invalid access tokens", async () => {
-    const { apiKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const accessToken = "invalid"
@@ -101,7 +98,7 @@ test("validateAccessTokenAndGetUser rejects invalid access tokens", async () => 
 })
 
 test("validateAccessTokenAndGetUser rejects missing authorization header", async () => {
-    const { apiKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     await expect(validateAccessTokenAndGetUser(undefined)).rejects.toThrow(UnauthorizedException)
@@ -109,17 +106,129 @@ test("validateAccessTokenAndGetUser rejects missing authorization header", async
     expect(nock.isDone()).toBe(true)
 })
 
-test("validateAccessTokenAndGetUser fails with incorrect apiKey", async () => {
-    const { apiKey } = await setupErrorTokenVerificationMetadataEndpoint(401)
-    const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL, apiKey: apiKey })
+test("validateAccessTokenAndGetUser fails when the JWKS endpoint errors", async () => {
+    const { privateKey } = await generateRsaKeyPair()
+    // Once for the eager fetch at init, once for the retry on the first request
+    const scope = nock(AUTH_URL).get(JWKS_PATH).times(2).reply(500)
+    const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL, apiKey: randomString() })
 
-    await expect(validateAccessTokenAndGetUser("irrelevant")).rejects.toThrow(UnexpectedException)
+    const accessToken = await createAccessToken({ internalUser: randomInternalUser(), privateKey, kid: "any" })
+
+    await expect(validateAccessTokenAndGetUser(`Bearer ${accessToken}`)).rejects.toThrow()
+
+    expect(scope.isDone()).toBe(true)
+})
+
+test("validateAccessTokenAndGetUser rejects tokens signed by a key that is not in the JWKS", async () => {
+    const { apiKey } = await setupJwksEndpoint()
+    const { privateKey: otherPrivateKey } = await generateRsaKeyPair()
+    const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
+
+    const accessToken = await createAccessToken({
+        internalUser: randomInternalUser(),
+        privateKey: otherPrivateKey,
+        kid: "unknown",
+    })
+
+    await expect(validateAccessTokenAndGetUser(`Bearer ${accessToken}`)).rejects.toThrow(UnauthorizedException)
 
     expect(nock.isDone()).toBe(true)
 })
 
+test("validateAccessTokenAndGetUser picks the right key by kid when the JWKS holds two", async () => {
+    const current = await generateRsaKeyPair()
+    const previous = await generateRsaKeyPair()
+    setupJwksEndpointWithKeys([
+        { kid: "current", publicKey: current.publicKey },
+        { kid: "previous", publicKey: previous.publicKey },
+    ])
+    const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL, apiKey: randomString() })
+
+    const userA = randomInternalUser()
+    const userB = randomInternalUser()
+    const tokenFromCurrent = await createAccessToken({
+        internalUser: userA,
+        privateKey: current.privateKey,
+        kid: "current",
+    })
+    const tokenFromPrevious = await createAccessToken({
+        internalUser: userB,
+        privateKey: previous.privateKey,
+        kid: "previous",
+    })
+
+    expect(await validateAccessTokenAndGetUser(`Bearer ${tokenFromCurrent}`)).toEqual(toUser(userA))
+    expect(await validateAccessTokenAndGetUser(`Bearer ${tokenFromPrevious}`)).toEqual(toUser(userB))
+
+    expect(nock.isDone()).toBe(true)
+})
+
+test("manualTokenVerificationMetadata accepts tokens signed by the fallback key", async () => {
+    const current = await generateRsaKeyPair()
+    const previous = await generateRsaKeyPair()
+    const tokenVerificationMetadata: TokenVerificationMetadata = {
+        issuer: AUTH_URL,
+        verifierKey: current.publicKey,
+        fallbackVerifierKey: previous.publicKey,
+    }
+    const { validateAccessTokenAndGetUser } = initBaseAuth({
+        authUrl: AUTH_URL,
+        apiKey: randomString(),
+        manualTokenVerificationMetadata: tokenVerificationMetadata,
+    })
+
+    const userA = randomInternalUser()
+    const userB = randomInternalUser()
+    const tokenFromCurrent = await createAccessToken({ internalUser: userA, privateKey: current.privateKey })
+    const tokenFromPrevious = await createAccessToken({ internalUser: userB, privateKey: previous.privateKey })
+
+    expect(await validateAccessTokenAndGetUser(`Bearer ${tokenFromCurrent}`)).toEqual(toUser(userA))
+    expect(await validateAccessTokenAndGetUser(`Bearer ${tokenFromPrevious}`)).toEqual(toUser(userB))
+})
+
+test("manualTokenVerificationMetadata rejects tokens signed by neither key", async () => {
+    const current = await generateRsaKeyPair()
+    const previous = await generateRsaKeyPair()
+    const other = await generateRsaKeyPair()
+    const { validateAccessTokenAndGetUser } = initBaseAuth({
+        authUrl: AUTH_URL,
+        apiKey: randomString(),
+        manualTokenVerificationMetadata: {
+            issuer: AUTH_URL,
+            verifierKey: current.publicKey,
+            fallbackVerifierKey: previous.publicKey,
+        },
+    })
+
+    const accessToken = await createAccessToken({ internalUser: randomInternalUser(), privateKey: other.privateKey })
+
+    await expect(validateAccessTokenAndGetUser(`Bearer ${accessToken}`)).rejects.toThrow(UnauthorizedException)
+})
+
+test("manualTokenVerificationMetadata reports expiry for an expired token signed by the fallback key", async () => {
+    const current = await generateRsaKeyPair()
+    const previous = await generateRsaKeyPair()
+    const { validateAccessTokenAndGetUser } = initBaseAuth({
+        authUrl: AUTH_URL,
+        apiKey: randomString(),
+        manualTokenVerificationMetadata: {
+            issuer: AUTH_URL,
+            verifierKey: current.publicKey,
+            fallbackVerifierKey: previous.publicKey,
+        },
+    })
+
+    const accessToken = await createAccessToken({
+        internalUser: randomInternalUser(),
+        privateKey: previous.privateKey,
+        expiresIn: "1 minute ago",
+    })
+
+    await expect(validateAccessTokenAndGetUser(`Bearer ${accessToken}`)).rejects.toThrow(/"exp"/)
+})
+
 test("validateAccessTokenAndGetUser fails with incorrect issuer", async () => {
-    const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey, privateKey, kid } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUser } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const internalUser = randomInternalUser()
@@ -133,7 +242,7 @@ test("validateAccessTokenAndGetUser fails with incorrect issuer", async () => {
 })
 
 test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole get user and org for extracted org", async () => {
-    const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey, privateKey, kid } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUserWithOrgInfo } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const orgMemberInfo = randomOrg()
@@ -151,7 +260,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole get user and org f
         orgId: orgMemberInfo.org_id,
         orgName: orgMemberInfo.org_name,
     }
-    const accessToken = await createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey, kid })
 
     const userAndOrgMemberInfo = await validateAccessTokenAndGetUserWithOrgInfo(`Bearer ${accessToken}`, orgInfo)
 
@@ -164,7 +273,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole get user and org f
 })
 
 test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole fails for valid access token but unknown org", async () => {
-    const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey, privateKey, kid } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUserWithOrgInfo } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const internalUser: InternalUser = {
@@ -175,7 +284,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole fails for valid ac
         orgId: uuid(),
         orgName: "orgName",
     }
-    const accessToken = await createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey, kid })
 
     await expect(validateAccessTokenAndGetUserWithOrgInfo(`Bearer ${accessToken}`, orgInfo)).rejects.toThrow(
         ForbiddenException
@@ -185,7 +294,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole fails for valid ac
 })
 
 test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole fails for invalid access token", async () => {
-    const { apiKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUserWithOrgInfo } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const orgInfo: RequiredOrgInfo = {
@@ -199,7 +308,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole fails for invalid 
 })
 
 test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole works with minimumRole", async () => {
-    const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey, privateKey, kid } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const orgMemberInfo = randomOrg()
@@ -215,7 +324,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole works with minimum
         orgName: orgMemberInfo.org_name,
     }
     const user = toUser(internalUser)
-    const accessToken = await createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey, kid })
 
     const rolesThatShouldSucceed = new Set(["Admin", "Member"])
     for (let role of ["Owner", "Admin", "Member"]) {
@@ -241,7 +350,7 @@ test("validateAccessTokenAndGetUserWithOrgInfoWithMinimumRole works with minimum
 })
 
 test("validateAccessTokenAndGetUserWithOrgWithExactRole works with requiredRole", async () => {
-    const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey, privateKey, kid } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUserWithOrgInfoWithExactRole } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const orgMemberInfo = randomOrg()
@@ -257,7 +366,7 @@ test("validateAccessTokenAndGetUserWithOrgWithExactRole works with requiredRole"
         orgName: orgMemberInfo.org_name,
     }
     const user = toUser(internalUser)
-    const accessToken = await createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey, kid })
 
     const rolesThatShouldSucceed = new Set(["Admin"])
     for (let role of ["Owner", "Admin", "Member"]) {
@@ -283,7 +392,7 @@ test("validateAccessTokenAndGetUserWithOrgWithExactRole works with requiredRole"
 })
 
 test("validateAccessTokenAndGetUserWithOrgWithPermission works with permission", async () => {
-    const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey, privateKey, kid } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUserWithOrgInfoWithPermission } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const orgMemberInfo = randomOrg()
@@ -299,7 +408,7 @@ test("validateAccessTokenAndGetUserWithOrgWithPermission works with permission",
         orgName: orgMemberInfo.org_name,
     }
     const user = toUser(internalUser)
-    const accessToken = await createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey, kid })
 
     const permissionsThatShouldSucceed = new Set(["read", "write"])
     for (let permission of ["read", "write", "delete"]) {
@@ -325,7 +434,7 @@ test("validateAccessTokenAndGetUserWithOrgWithPermission works with permission",
 })
 
 test("validateAccessTokenAndGetUserWithOrgWithAllPermissions works with permission", async () => {
-    const { apiKey, privateKey } = await setupTokenVerificationMetadataEndpoint()
+    const { apiKey, privateKey, kid } = await setupJwksEndpoint()
     const { validateAccessTokenAndGetUserWithOrgInfoWithAllPermissions } = initBaseAuth({ authUrl: AUTH_URL, apiKey })
 
     const orgMemberInfo = randomOrg()
@@ -341,7 +450,7 @@ test("validateAccessTokenAndGetUserWithOrgWithAllPermissions works with permissi
         orgName: orgMemberInfo.org_name,
     }
     const user = toUser(internalUser)
-    const accessToken = await createAccessToken({ internalUser, privateKey })
+    const accessToken = await createAccessToken({ internalUser, privateKey, kid })
 
     // these should succeed
     for (let permissions of [["read"], ["write"], ["read", "write"], []]) {
@@ -370,34 +479,23 @@ test("validateAccessTokenAndGetUserWithOrgWithAllPermissions works with permissi
 
 // helper functions
 
-async function setupTokenVerificationMetadataEndpoint() {
+async function setupJwksEndpoint() {
     const { publicKey, privateKey } = await generateRsaKeyPair()
     const apiKey = randomString()
-
-    const scope = nock(BASE_API_URL)
-        .get("/api/v1/token_verification_metadata")
-        .matchHeader("authorization", `Bearer ${apiKey}`)
-        .matchHeader("X-Propelauth-url", AUTH_HOSTNAME)
-        .reply(
-            200,
-            JSON.stringify({
-                verifier_key_pem: publicKey,
-            })
-        )
-
-    return { privateKey, apiKey, scope }
+    const kid = randomString()
+    const scope = setupJwksEndpointWithKeys([{ kid, publicKey }])
+    return { privateKey, apiKey, kid, scope }
 }
 
-async function setupErrorTokenVerificationMetadataEndpoint(statusCode: number) {
-    const apiKey = randomString()
-
-    const scope = nock(BASE_API_URL)
-        .get("/api/v1/token_verification_metadata")
-        .matchHeader("X-Propelauth-url", AUTH_HOSTNAME)
-        .matchHeader("authorization", `Bearer ${apiKey}`)
-        .reply(statusCode)
-
-    return { apiKey, scope }
+/** Serves one JWKS response containing the given SPKI PEM public keys */
+function setupJwksEndpointWithKeys(publicKeys: { kid: string; publicKey: string }[]) {
+    const keys = publicKeys.map(({ kid, publicKey }) => ({
+        ...createPublicKey(publicKey).export({ format: "jwk" }),
+        kid,
+        alg: ALGO,
+        use: "sig",
+    }))
+    return nock(AUTH_URL).get(JWKS_PATH).reply(200, JSON.stringify({ keys }))
 }
 
 async function createAccessToken({
@@ -405,9 +503,10 @@ async function createAccessToken({
     privateKey,
     expiresIn,
     issuer,
+    kid,
 }: CreateAccessTokenArgs): Promise<string> {
     const accessToken = await new jose.SignJWT(internalUser)
-        .setProtectedHeader({ alg: ALGO })
+        .setProtectedHeader(kid ? { alg: ALGO, kid } : { alg: ALGO })
         .setIssuer(issuer ? issuer : AUTH_URL)
         .setExpirationTime(expiresIn ? expiresIn : "1d")
         .sign(createPrivateKey(privateKey))
@@ -486,4 +585,5 @@ interface CreateAccessTokenArgs {
     privateKey: string
     expiresIn?: string
     issuer?: string
+    kid?: string
 }

@@ -1,2 +1,4 @@
 packages:
     - "packages/*"
+minimumReleaseAgeExclude:
+    - "@propelauth/node-apis@2.1.37"
