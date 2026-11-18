@@ -7,9 +7,12 @@ const packageJson = require("./package.json")
 
 const extensions = [".js", ".ts"]
 
-const globals = {
-    ...packageJson.devDependencies,
-}
+const externalPackages = [
+    ...Object.keys(packageJson.dependencies || {}),
+    ...Object.keys(packageJson.peerDependencies || {}),
+]
+
+const isExternal = (id) => externalPackages.some((pkg) => id === pkg || id.startsWith(`${pkg}/`))
 
 export default {
     input: "src/index.ts",
@@ -29,5 +32,5 @@ export default {
         commonjs(),
         typescript(),
     ],
-    external: Object.keys(globals),
+    external: isExternal,
 }
