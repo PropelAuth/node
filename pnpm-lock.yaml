@@ -32,9 +32,6 @@ importers:
       '@types/jest':
         specifier: ^27.5.2
         version: 27.5.2
-      '@types/uuid':
-        specifier: ^8.3.4
-        version: 8.3.4
       jest:
         specifier: ^27.5.1
         version: 27.5.1(supports-color@8.1.1)
@@ -66,8 +63,8 @@ importers:
         specifier: ^4.9.5
         version: 4.9.5
       uuid:
-        specifier: ^8.3.2
-        version: 8.3.2
+        specifier: 11.1.1
+        version: 11.1.1
 
   packages/node:
     dependencies:
@@ -93,9 +90,6 @@ importers:
       '@types/jest':
         specifier: ^27.5.2
         version: 27.5.2
-      '@types/uuid':
-        specifier: ^8.3.4
-        version: 8.3.4
       jest:
         specifier: ^27.5.1
         version: 27.5.1(supports-color@8.1.1)
@@ -130,8 +124,8 @@ importers:
         specifier: ^4.9.5
         version: 4.9.5
       uuid:
-        specifier: ^8.3.2
-        version: 8.3.2
+        specifier: ^11.1.1
+        version: 11.1.1
 
 packages:
 
@@ -528,9 +522,6 @@ packages:
 
   '@types/stack-utils@2.0.3':
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
-
-  '@types/uuid@8.3.4':
-    resolution: {integrity: sha512-c/I8ZRb51j+pYGAu5CrFMRxqZ2ke4y2grEBO5AUjgSkSk+qT2Ea+OdWElz/OiMf5MNpn2b17kuVBwZLQJXzihw==}
 
   '@types/yargs-parser@21.0.3':
     resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
@@ -1638,9 +1629,8 @@ packages:
   url-parse@1.5.10:
     resolution: {integrity: sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ==}
 
-  uuid@8.3.2:
-    resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
-    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+  uuid@11.1.1:
+    resolution: {integrity: sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==}
     hasBin: true
 
   v8-to-istanbul@8.1.1:
@@ -2291,8 +2281,6 @@ snapshots:
       '@types/send': 0.17.6
 
   '@types/stack-utils@2.0.3': {}
-
-  '@types/uuid@8.3.4': {}
 
   '@types/yargs-parser@21.0.3': {}
 
@@ -3563,7 +3551,7 @@ snapshots:
       querystringify: 2.2.0
       requires-port: 1.0.0
 
-  uuid@8.3.2: {}
+  uuid@11.1.1: {}
 
   v8-to-istanbul@8.1.1:
     dependencies:
